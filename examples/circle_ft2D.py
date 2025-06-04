@@ -8,8 +8,6 @@ from scipy.ndimage import map_coordinates
 from windows import RealTimeCrossSectionViewer 
 
 
-
-
 def circular_aperture(shape=(512,512), radius = 50):
     h, w = shape
     y, x = np.indices((h,w))
@@ -26,19 +24,29 @@ def rectangular_aperture(shape=(512,512), size = (50,50)):
     rectangle[cx-half_h: cx+half_h, cy-half_w:cy+half_w] = 1.0
     return rectangle
 
-def slit_apeture(shape=(512,512), height = 100, number_slit = 5, W = 2, d = 10):
+def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
     h , w = shape
     cx, cy = w // 2, h // 2
-    hs , ws = height , number_slit * d
+    hs , ws = size
     half_h, half_w = hs // 2, ws // 2
 
-    number_slit = int(hs/d)
+    number_slit = hs // d 
 
     aperture = np.zeros((h,w))
 
+    y_start = cy - half_h
+    y_end = cy + half_h
+
     for i in range(number_slit):
-        aperture[cx-half_w: cx+half_w, cy-half_w:cy+half_w] = 1.0
-    None
+                
+        slit_center_x = cx - (number_slit // 2) * d + i * d
+
+        x_start = slit_center_x - W // 2
+        x_end = slit_center_x + W // 2
+
+
+        aperture[x_start:x_end, y_start:y_end] = 1.0
+    return aperture
     
 
 def compute_fft2(aperture):
@@ -60,11 +68,14 @@ if __name__ == "__main__":
     app = QApplication([])
 
 
-    aperture = rectangular_aperture(size=(100,150))
+    aperture = slit_apeture()
     aperture_fft = compute_fft2(aperture)
-    fft_3d = np.expand_dims(aperture_fft, axis=0) 
 
-    print(fft_3d.shape)
+    num_slices = 50
+
+    # Repeat the aperture and FFT along z axis
+    aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
+    fft_3d = np.repeat(aperture_fft[np.newaxis, :, :], num_slices, axis=0)
 
     viewer = RealTimeCrossSectionViewer(fft_3d)
 

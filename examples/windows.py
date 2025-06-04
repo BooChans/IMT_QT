@@ -186,8 +186,10 @@ if __name__ == "__main__":
     xx, yy = np.meshgrid(x, y)
     chessboard_2d = ((xx // 32 + yy // 32) % 2).astype(float)  # blocks of 32 pixels
 
+
     # Stack the same chessboard pattern along z dimension
     data = np.stack([chessboard_2d for _ in range(z_dim)], axis=0)
+    print(data.shape)
     viewer = RealTimeCrossSectionViewer(data)
     viewer.resize(1000, 800)
     viewer.show()
