@@ -34,7 +34,7 @@ def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
 
     number_slit = hs // d 
 
-    aperture = np.zeros((w,h))
+    aperture = np.zeros((h,w))
 
     y_start = cy - half_h
     y_end = cy + half_h
@@ -49,7 +49,66 @@ def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
 
         aperture[x_start:x_end,y_start:y_end] = 1.0
     return aperture
+
+
+def square_aperture_array(shape=(512,512), square_size=5, spacing=20, grid_size=(5,5)):
+    """
+    Create a 2D image with a grid of square apertures.
     
+    Args:
+        shape (tuple): Size of the output image (height, width).
+        square_size (int): Size of each square aperture (pixels).
+        spacing (int): Distance between squares (pixels), center-to-center.
+        grid_size (tuple): Number of squares in (rows, cols).
+        
+    Returns:
+        aperture (2D np.array): Binary aperture image with 1 inside squares, 0 outside.
+    """
+    h, w = shape
+    aperture = np.zeros((h,w))
+    
+    # Calculate total grid size in pixels
+    grid_h = spacing * (grid_size[0] - 1) + square_size
+    grid_w = spacing * (grid_size[1] - 1) + square_size
+    
+    # Start coordinates to center the grid
+    start_y = (h - grid_h) // 2
+    start_x = (w - grid_w) // 2
+    
+    for i in range(grid_size[0]):  # rows
+        for j in range(grid_size[1]):  # cols
+            y = start_y + i * spacing
+            x = start_x + j * spacing
+            aperture[y:y+square_size, x:x+square_size] = 1.0
+    
+    return aperture
+
+def elliptical_aperture_array(shape=(512,512), big_diameter=10, small_diameter=5, spacing=25, grid_size=(5,5)):
+    h, w = shape
+    aperture = np.zeros((h,w))
+
+    grid_h = spacing * (grid_size[0] - 1) + big_diameter
+    grid_w = spacing * (grid_size[1] - 1) + big_diameter
+
+    start_y = (h - grid_h) / 2.0
+    start_x = (w - grid_w) / 2.0
+
+    # Use meshgrid with indexing='ij' to get correct y,x coordinates
+    yy, xx = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
+
+    a = big_diameter / 2.0
+    b = small_diameter / 2.0
+
+    for i in range(grid_size[0]):
+        for j in range(grid_size[1]):
+            center_y = start_y + i * spacing + a
+            center_x = start_x + j * spacing + a
+
+            # Equation of ellipse
+            mask = (((xx - center_x) / a) ** 2 + ((yy - center_y) / b) ** 2) <= 1
+            aperture[mask] = 1.0
+
+    return aperture
 
 def compute_fft2(aperture):
     fft = np.fft.fftshift(np.fft.fft2(aperture))
@@ -70,7 +129,7 @@ if __name__ == "__main__":
     app = QApplication([])
 
 
-    aperture = slit_apeture()
+    aperture = elliptical_aperture_array()
     aperture_fft = compute_fft2(aperture)
 
     num_slices = 1
