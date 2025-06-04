@@ -54,6 +54,8 @@ class RealTimeCrossSectionViewer(QMainWindow):
             resizable=True
         )
         self.slice_view.getView().addItem(self.line)
+
+
         
         # Cross-section display
         self.cross_section_container = QWidget()
@@ -134,7 +136,7 @@ class RealTimeCrossSectionViewer(QMainWindow):
             
             profile = map_coordinates(
                 self.volume[self.current_slice],
-                np.vstack([y, x]),
+                np.vstack([x, y]),
                 order=1,
                 mode='constant',  # fill values outside with cval
                 cval=0.0          # fill value is zero (black)

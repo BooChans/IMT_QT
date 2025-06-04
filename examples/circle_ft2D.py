@@ -34,7 +34,7 @@ def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
 
     number_slit = hs // d 
 
-    aperture = np.zeros((h,w))
+    aperture = np.zeros((w,h))
 
     y_start = cy - half_h
     y_end = cy + half_h
@@ -47,7 +47,7 @@ def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
         x_end = slit_center_x + W // 2
 
 
-        aperture[x_start:x_end, y_start:y_end] = 1.0
+        aperture[x_start:x_end,y_start:y_end] = 1.0
     return aperture
     
 
@@ -73,12 +73,13 @@ if __name__ == "__main__":
     aperture = slit_apeture()
     aperture_fft = compute_fft2(aperture)
 
-    num_slices = 50
+    num_slices = 1
 
     # Repeat the aperture and FFT along z axis
     aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
     fft_3d = np.repeat(aperture_fft[np.newaxis, :, :], num_slices, axis=0)
 
+    print(fft_3d.shape)
     viewer = RealTimeCrossSectionViewer(fft_3d)
 
     viewer.resize(1000, 800)
