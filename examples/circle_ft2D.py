@@ -8,6 +8,8 @@ from scipy.ndimage import map_coordinates
 from windows import RealTimeCrossSectionViewer 
 
 
+
+
 def circular_aperture(shape=(512,512), radius = 50):
     h, w = shape
     y, x = np.indices((h,w))
