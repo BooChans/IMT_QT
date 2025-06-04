@@ -1,20 +1,21 @@
+import sys
 import numpy as np
 import pyqtgraph as pg
-from PyQt5.QtWidgets import (
+from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
     QSplitter, QLabel, QSlider
 )
-from PyQt5.QtCore import Qt
+from PyQt6.QtCore import Qt
 from pyqtgraph import LineSegmentROI
 from scipy.ndimage import map_coordinates
+
 
 print("TOP-LEVEL: importing", __name__)
 
 
-
 class RealTimeCrossSectionViewer(QMainWindow):
     """
-    A PyQt5-based GUI for interactively exploring 2D slices from a 3D volume 
+    A PyQt6-based GUI for interactively exploring 2D slices from a 3D volume 
     and extracting line profile cross-sections in real time.
     """
     def __init__(self, volume_data):
@@ -29,23 +30,23 @@ class RealTimeCrossSectionViewer(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
 
-        self.splitter = QSplitter(Qt.Vertical, self.central_widget)
+        self.splitter = QSplitter(Qt.Orientation.Vertical, self.central_widget)
         self.splitter.setSizes([700, 300])
 
         self.layout = QVBoxLayout(self.central_widget)
 
         print("one")
-        self.slice_view = None
+        self.slice_view = pg.ImageView()
         print("one")
 
         self.layout.addWidget(QLabel("Zoom:"))
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(256)
         self.slider.setValue(0)
         self.layout.addWidget(self.slider)
 
-        #self.slice_view.setImage(self.volume[self.current_slice])
+        self.slice_view.setImage(self.volume[self.current_slice])
         self.splitter.addWidget(self.slice_view)
         view = self.slice_view.getView()
         view.setRange(xRange=(0, self.volume.shape[2]), yRange=(0, self.volume.shape[1]), padding=0)
@@ -84,7 +85,6 @@ class RealTimeCrossSectionViewer(QMainWindow):
         self.cursor_label = QLabel("X: ---, Y: ---")
         cross_layout.addWidget(self.cursor_label)
 
-
     def setup_interaction(self):
         self.line.sigRegionChanged.connect(self.update_cross_section)
         self.slider.valueChanged.connect(self.update_zoom)
@@ -93,7 +93,7 @@ class RealTimeCrossSectionViewer(QMainWindow):
         self.update_cross_section()
 
     def toggle_line_roi(self, state):
-        if state == Qt.Checked:
+        if state == Qt.CheckState.Checked:
             self.line.show()
             self.cross_section_container.show()
             self.update_cross_section()
@@ -161,9 +161,8 @@ class RealTimeCrossSectionViewer(QMainWindow):
 if __name__ == "__main__":
 
     print("Before QApplication")
-    app = QApplication([])
+    app = QApplication(sys.argv)
     print("After QApplication")
-
 
     z_dim, y_dim, x_dim = 100, 256, 256
     x = np.arange(x_dim)
@@ -177,4 +176,4 @@ if __name__ == "__main__":
     print("After creating viewer")
     viewer.resize(1000, 800)
     viewer.show()
-    app.exec_()
+    sys.exit(app.exec())
