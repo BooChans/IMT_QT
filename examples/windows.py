@@ -34,9 +34,7 @@ class RealTimeCrossSectionViewer(QMainWindow):
 
         self.layout = QVBoxLayout(self.central_widget)
         
-        print("one")
         self.slice_view = pg.ImageView()
-        print("one")
 
         self.layout.addWidget(QLabel("Zoom:"))
         self.slider = QSlider(Qt.Horizontal)
