@@ -1,11 +1,7 @@
 import numpy as np
 import sys
-import pyqtgraph as pg
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSlider, QLabel, QPushButton, QHBoxLayout
-from PySide6.QtCore import Qt
-from pyqtgraph import LineROI
-from scipy.ndimage import map_coordinates
-from windows_ import RealTimeCrossSectionViewer 
+from PyQt5.QtWidgets import QApplication
+from windows import RealTimeCrossSectionViewer 
 
 
 
