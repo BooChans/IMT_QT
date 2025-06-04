@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QSlider, QLabe
 from PySide6.QtCore import Qt
 from pyqtgraph import LineROI
 from scipy.ndimage import map_coordinates
-from windows import RealTimeCrossSectionViewer 
+from windows_ import RealTimeCrossSectionViewer 
 
 
 
