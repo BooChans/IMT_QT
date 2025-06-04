@@ -11,6 +11,16 @@ from windows import RealTimeCrossSectionViewer
 
 
 def circular_aperture(shape=(512,512), radius = 50):
+    """
+    Create a circular aperture in a binary 2D image.
+
+    Args:
+        shape (tuple): Size of the output image (height, width).
+        radius (int): Radius of the circular aperture in pixels.
+
+    Returns:
+        2D np.array: Binary image with 1s inside the circle, 0s outside.
+    """
     h, w = shape
     y, x = np.indices((h,w))
     cx, cy = w // 2, h // 2
@@ -18,6 +28,16 @@ def circular_aperture(shape=(512,512), radius = 50):
     return (r <= radius).astype(float)
 
 def rectangular_aperture(shape=(512,512), size = (50,50)):
+    """
+    Create a centered rectangular aperture.
+
+    Args:
+        shape (tuple): Output image size (height, width).
+        size (tuple): Rectangle size (height, width).
+
+    Returns:
+        2D np.array: Binary image with 1s inside the rectangle, 0s outside.
+    """
     h, w = shape
     hr, wr = size
     cx, cy = w // 2, h // 2
@@ -27,6 +47,18 @@ def rectangular_aperture(shape=(512,512), size = (50,50)):
     return rectangle
 
 def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
+    """
+    Create a vertical slit aperture with multiple slits.
+
+    Args:
+        shape (tuple): Size of the output image (height, width).
+        size (tuple): Area occupied by slits (height, width).
+        W (int): Width of each slit in pixels.
+        d (int): Distance between slit centers in pixels.
+
+    Returns:
+        2D np.array: Binary image with 1s for slits, 0s elsewhere.
+    """
     h , w = shape
     cx, cy = w // 2, h // 2
     hs , ws = size

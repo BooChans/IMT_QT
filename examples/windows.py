@@ -6,7 +6,17 @@ from pyqtgraph import LineSegmentROI
 from scipy.ndimage import map_coordinates
 
 class RealTimeCrossSectionViewer(QMainWindow):
+    """
+    A PyQt-based GUI for interactively exploring 2D slices from a 3D volume 
+    and extracting line profile cross-sections in real time.
+    """
     def __init__(self, volume_data):
+        """
+        Initialize the viewer with a 3D numpy volume.
+
+        Args:
+            volume_data (3D np.array): Input data with shape (depth, height, width).
+        """
         super().__init__()
         self.volume = volume_data
         self.current_slice = 0
@@ -14,6 +24,9 @@ class RealTimeCrossSectionViewer(QMainWindow):
         self.setup_interaction()
         
     def setup_ui(self):
+        """
+        Set up the GUI layout including image display, line ROI, plot, and slider.
+        """
 
         self.setWindowTitle("FFT Cross-Section Viewer")
         self.central_widget = QWidget()
@@ -87,6 +100,9 @@ class RealTimeCrossSectionViewer(QMainWindow):
 
 
     def setup_interaction(self):
+        """
+        Connect signals to corresponding callbacks.
+        """
         # Connect the correct signals
         self.line.sigRegionChanged.connect(self.update_cross_section)
         self.slider.valueChanged.connect(self.update_zoom)
@@ -99,6 +115,9 @@ class RealTimeCrossSectionViewer(QMainWindow):
 
 
     def toggle_line_roi(self, state):
+        """
+        Show or hide the interactive ROI line and plot based on checkbox state.
+        """
         if state == Qt.Checked.value:
             self.line.show()
             self.cross_section_container.show()
@@ -108,7 +127,9 @@ class RealTimeCrossSectionViewer(QMainWindow):
             self.cross_section_container.hide()
 
     def update_cross_section(self):
-        """Full quality rendering"""
+        """
+        Sample intensity values along the ROI line and plot the cross-section.
+        """
         try:
             state = self.line.getState()
             start = state['points'][0] +  state['pos']
@@ -151,6 +172,9 @@ class RealTimeCrossSectionViewer(QMainWindow):
             print(f"Update error: {str(e)}")
 
     def update_zoom(self, slider_value):
+        """
+        Adjust the zoom level based on the slider value.
+        """
         # Invert slider behavior: slider right = zoom in, slider left = zoom out
         zoom_size = self.slider.maximum() - slider_value + self.slider.minimum()
         
@@ -165,6 +189,10 @@ class RealTimeCrossSectionViewer(QMainWindow):
         )
 
     def mouse_moved_on_plot(self, pos):
+        """
+        Track mouse movement over the cross-section plot and update cursor.
+        """
+
         vb = self.cross_section_plot.getViewBox()
         if vb.sceneBoundingRect().contains(pos):
             mouse_point = vb.mapSceneToView(pos)
