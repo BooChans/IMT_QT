@@ -31,3 +31,5 @@ def compute_fft2_log(aperture):
     log_magnitude = np.log1p(magnitude)
     log_magnitude /= log_magnitude.max()  
     return log_magnitude
+
+

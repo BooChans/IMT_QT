@@ -2,6 +2,7 @@ import numpy as np
 import sys
 from PyQt5.QtWidgets import QApplication
 from windows import RealTimeCrossSectionViewer 
+from hf import hf_slow, hf_fresnel_approx
 
 
 
@@ -157,17 +158,23 @@ if __name__ == "__main__":
     app = QApplication([])
 
 
-    aperture = elliptical_aperture_array()
+    aperture = circular_aperture()
     aperture_fft = compute_fft2(aperture)
 
     num_slices = 1
 
     # Repeat the aperture and FFT along z axis
-    aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
-    fft_3d = np.repeat(aperture_fft[np.newaxis, :, :], num_slices, axis=0)
+    #aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
+    #fft_3d = np.repeat(aperture_fft[np.newaxis, :, :], num_slices, axis=0)
 
-    print(fft_3d.shape)
-    viewer = RealTimeCrossSectionViewer(fft_3d)
+    z = 1
+    L = 10e-2
+    I = hf_fresnel_approx(z=z, L=L)
+
+    #I = hf_slow(z=1e-4, L = 3e-3)
+    I_3D = np.repeat(I[np.newaxis, :, :], num_slices, axis=0)
+    print(I_3D.shape)
+    viewer = RealTimeCrossSectionViewer(I_3D)
 
     viewer.resize(1000, 800)
     viewer.show()
