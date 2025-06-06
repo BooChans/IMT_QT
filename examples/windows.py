@@ -155,6 +155,7 @@ class RealTimeCrossSectionViewer(QMainWindow):
         self.update_cross_section()
         self.cursor_line1.sigPositionChanged.connect(self.update_cursor_labels)
         self.cursor_line2.sigPositionChanged.connect(self.update_cursor_labels)
+        self.update_cursor_labels()
         self.cursor_lines_toggle_cb.toggled.connect(self.update_cursor_visibility)
 
 
@@ -182,13 +183,15 @@ class RealTimeCrossSectionViewer(QMainWindow):
             self.update_cross_section()  # Restore data
     def update_cross_section(self):
         try:
+            pixel_size = 1
             state = self.line.getState()
             start = state['points'][0] + state['pos']
             end = state['points'][1] + state['pos']
             n_samples = 300
-            x = np.linspace(start[0], end[0], n_samples)
+            distance = np.hypot(end[0] - start[0], end[1] - start[1])
+            physical_length = distance * pixel_size
+            x = np.linspace(start[0], end[0], n_samples)  # microns
             y = np.linspace(start[1], end[1], n_samples)
-
             valid_mask = (x >= 0) & (x <= self.volume.shape[2] - 1) & \
                          (y >= 0) & (y <= self.volume.shape[1] - 1)
 
@@ -209,10 +212,12 @@ class RealTimeCrossSectionViewer(QMainWindow):
             )
 
             profile[~valid_mask] = 0
+
+            x_physical = np.linspace(0, physical_length, n_samples)
             if not hasattr(self, 'profile_curve'):
-                self.profile_curve = self.cross_section_plot.plot(profile, pen='y')
+                self.profile_curve = self.cross_section_plot.plot(x_physical,profile, pen='y')
             else:
-                self.profile_curve.setData(profile)
+                self.profile_curve.setData(x_physical,profile)
 
         except Exception as e:
             print(f"Update error: {str(e)}")
