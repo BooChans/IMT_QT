@@ -39,7 +39,7 @@ class RealTimeCrossSectionViewer(QMainWindow):
         self.layout.addWidget(QLabel("Zoom:"))
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
-        self.slider.setMaximum(256)
+        self.slider.setMaximum(1000)
         self.slider.setValue(0)
         self.layout.addWidget(self.slider)
 

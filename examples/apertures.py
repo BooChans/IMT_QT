@@ -2,26 +2,19 @@ import numpy as np
 import sys
 from PyQt5.QtWidgets import QApplication
 from windows import RealTimeCrossSectionViewer 
-from hf import hf_slow, hf_fresnel_approx
+from fresnel_propagator import angular_spectrum_propagation, fre_ft, fre_ir
 
 
 
 
-def circular_aperture(shape=(512,512), radius = 50):
-    """
-    Create a circular aperture in a binary 2D image.
-
-    Args:
-        shape (tuple): Size of the output image (height, width).
-        radius (int): Radius of the circular aperture in pixels.
-
-    Returns:
-        2D np.array: Binary image with 1s inside the circle, 0s outside.
-    """
+def circular_aperture(shape=(512,512), radius = 0.3e-3, dx = 1e-6):
     h, w = shape
-    y, x = np.indices((h,w))
-    cx, cy = w // 2, h // 2
-    r = np.sqrt((x-cx)**2+(y-cy)**2)
+    assert h*dx > 2*radius, "Aperture must fit inside the simulation window"
+
+    x = (np.arange(w) - w // 2) * dx
+    y = (np.arange(h) - h // 2) * dx
+    X, Y = np.meshgrid(x, y)
+    r = np.sqrt(X**2 + Y**2)
     return (r <= radius).astype(float)
 
 def rectangular_aperture(shape=(512,512), size = (50,50)):
@@ -139,6 +132,26 @@ def elliptical_aperture_array(shape=(512,512), big_diameter=10, small_diameter=5
 
     return aperture
 
+def zero_pad(U0, new_shape):
+    """
+    Pads a 2D array U0 with zeros to match new_shape.
+
+    Args:
+        U0 (2D np.array): Original input field.
+        new_shape (tuple): Desired shape (rows, cols) after padding.
+
+    Returns:
+        2D np.array: Zero-padded array with U0 centered.
+    """
+    padded = np.zeros(new_shape, dtype=U0.dtype)
+    old_shape = U0.shape
+
+    start_y = (new_shape[0] - old_shape[0]) // 2
+    start_x = (new_shape[1] - old_shape[1]) // 2
+
+    padded[start_y:start_y + old_shape[0], start_x:start_x + old_shape[1]] = U0
+    return padded
+
 def compute_fft2(aperture):
     fft = np.fft.fftshift(np.fft.fft2(aperture))
     intensity = np.abs(fft) ** 2
@@ -157,24 +170,30 @@ if __name__ == "__main__":
 
     app = QApplication([])
 
+    #N = 512              # grid size
+    #dx = 10e-6           # sampling interval (10 microns)
+    #wavelength = 633e-9  # wavelength (633 nm)
+    #z = 10             # propagation distance (2 cm)
+    #radius = 0.1e-3      # aperture radius (0.1 mm)
 
-    aperture = circular_aperture()
-    aperture_fft = compute_fft2(aperture)
+    # Parameters
+    N = 2048               # increase grid size for larger window
+    dx = 50e-6             # increase sampling interval (50 µm)
+    wavelength = 633e-9
+    z = 10                 # 10 meters propagation distance
+    radius = 0.1e-3        # 0.1 mm aperture
+
+    aperture = circular_aperture((N,N), radius = radius, dx = dx)
+    #aperture = zero_pad(aperture, (1024,1024))
+    diffraction = fre_ir(aperture, wavelength, z, dx)
 
     num_slices = 1
-
     # Repeat the aperture and FFT along z axis
-    #aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
-    #fft_3d = np.repeat(aperture_fft[np.newaxis, :, :], num_slices, axis=0)
+    aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
+    fft_3d = np.repeat(diffraction[np.newaxis, :, :], num_slices, axis=0)
 
-    z = 1
-    L = 10e-2
-    I = hf_fresnel_approx(z=z, L=L)
 
-    #I = hf_slow(z=1e-4, L = 3e-3)
-    I_3D = np.repeat(I[np.newaxis, :, :], num_slices, axis=0)
-    print(I_3D.shape)
-    viewer = RealTimeCrossSectionViewer(I_3D)
+    viewer = RealTimeCrossSectionViewer(fft_3d)
 
     viewer.resize(1000, 800)
     viewer.show()
