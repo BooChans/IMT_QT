@@ -6,15 +6,34 @@ from windows import RealTimeCrossSectionViewer
 
 
 
-def circular_aperture(shape=(512,512), radius = 150, dx = 1):
+def elliptical_aperture(shape=(512,512), size = (300,300), dx = 1):
+    """
+    Create a centered elliptical aperture.
+    
+    Args:
+        shape (tuple): Output image size (height, width) in pixels.
+        size (tuple): Ellipse diameters (big_diameter, small_diameter) in physical units (e.g., microns).
+        dx (float): Sampling rate (physical size per pixel).
+        
+    Returns:
+        2D np.array: Binary image with 1s inside the ellipse, 0s outside.
+    """
     h, w = shape
-    assert 2*radius/dx < h, "Aperture must fit inside the simulation window"
-
-    x = (np.arange(w) - w // 2) * dx
-    y = (np.arange(h) - h // 2) * dx
+    big_diameter, small_diameter = size
+    
+    # Create coordinate grids centered at zero, scaled by dx
+    x = (np.arange(w) - w//2) * dx
+    y = (np.arange(h) - h//2) * dx
     X, Y = np.meshgrid(x, y)
-    r = np.sqrt(X**2 + Y**2)
-    return (r <= radius).astype(np.float64)
+    
+    # Ellipse semi-axes
+    a = big_diameter / 2
+    b = small_diameter / 2
+    
+    # Equation of ellipse: (X/a)^2 + (Y/b)^2 <= 1
+    aperture = ((X / a)**2 + (Y / b)**2) <= 1
+    return aperture.astype(np.float64)
+
 
 def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1):
     """
@@ -213,12 +232,6 @@ if __name__ == "__main__":
 
     app = QApplication([])
 
-    #N = 512              # grid size
-    #dx = 10e-6           # sampling interval (10 microns)
-    #wavelength = 633e-9  # wavelength (633 nm)
-    #z = 10             # propagation distance (2 cm)
-    #radius = 0.1e-3      # aperture radius (0.1 mm)
-
     # Parameters
     N = 2048               # increase grid size for larger window
     dx = 50e-6             # increase sampling interval (50 µm)
@@ -226,15 +239,11 @@ if __name__ == "__main__":
     z = 10                 # 10 meters propagation distance
     radius = 0.1e-3        # 0.1 mm aperture
 
-    #aperture = circular_aperture((N,N), radius = radius, dx = dx)
-    aperture = elliptical_aperture_array()
-    #aperture = zero_pad(aperture, (1024,1024))
-    #diffraction = fre_ir(aperture, wavelength, z, dx)
+    aperture = elliptical_aperture()
 
     num_slices = 1
     # Repeat the aperture and FFT along z axis
     aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
-    #fft_3d = np.repeat(diffraction[np.newaxis, :, :], num_slices, axis=0)
 
 
     viewer = RealTimeCrossSectionViewer(aperture_3D)
