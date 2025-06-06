@@ -17,6 +17,7 @@ def original_near_field(U0, wavelength, z, dx):
     Returns:
         Intensity at distance z.
     """
+    U0 = np.complex128(U0)
     N = U0.shape[0]  # Assume square input
     k = 2 * np.pi / wavelength
     

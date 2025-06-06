@@ -2,22 +2,21 @@ import numpy as np
 import sys
 from PyQt5.QtWidgets import QApplication
 from windows import RealTimeCrossSectionViewer 
-from fresnel_propagator import angular_spectrum_propagation, fre_ft, fre_ir
 
 
 
 
-def circular_aperture(shape=(512,512), radius = 0.3e-3, dx = 1e-6):
+def circular_aperture(shape=(512,512), radius = 150, dx = 1):
     h, w = shape
-    assert h*dx > 2*radius, "Aperture must fit inside the simulation window"
+    assert 2*radius/dx < h, "Aperture must fit inside the simulation window"
 
     x = (np.arange(w) - w // 2) * dx
     y = (np.arange(h) - h // 2) * dx
     X, Y = np.meshgrid(x, y)
     r = np.sqrt(X**2 + Y**2)
-    return (r <= radius).astype(float)
+    return (r <= radius).astype(np.float64)
 
-def rectangular_aperture(shape=(512,512), size = (50,50)):
+def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1):
     """
     Create a centered rectangular aperture.
 
@@ -28,105 +27,163 @@ def rectangular_aperture(shape=(512,512), size = (50,50)):
     Returns:
         2D np.array: Binary image with 1s inside the rectangle, 0s outside.
     """
+    # Create a SQUARE aperture (instead of circular)
     h, w = shape
     hr, wr = size
-    cx, cy = w // 2, h // 2
-    half_h, half_w = hr // 2, wr // 2
-    rectangle = np.zeros((h,w))
-    rectangle[cx-half_h: cx+half_h, cy-half_w:cy+half_w] = 1.0
-    return rectangle
+    assert hr / dx < h, "Sampling value is too low"
+    assert wr / dx < w, "Sampling value is too low"
+    x = np.arange(-w//2, w//2) * dx
+    y = np.arange(-h//2, h//2) * dx
+    X, Y = np.meshgrid(x, y)
+    aperture = ((np.abs(X) <= wr/2) & (np.abs(Y) <= hr/2)).astype(np.float64)  # Square mask
+    return aperture
 
-def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10):
+
+def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 0.5):
     """
-    Create a vertical slit aperture with multiple slits.
+    Create a vertical slit aperture with multiple slits, using physical units.
 
     Args:
-        shape (tuple): Size of the output image (height, width).
-        size (tuple): Area occupied by slits (height, width).
-        W (int): Width of each slit in pixels.
-        d (int): Distance between slit centers in pixels.
+        shape (tuple): Output image shape (pixels) (height, width).
+        size (tuple): Total area (μm) to occupy with slits (height, width).
+        W (float): Slit width in microns.
+        d (float): Distance between slit centers in microns.
+        dx (float): Sampling size (microns per pixel).
 
     Returns:
         2D np.array: Binary image with 1s for slits, 0s elsewhere.
     """
-    h , w = shape
-    cx, cy = w // 2, h // 2
-    hs , ws = size
-    half_h, half_w = hs // 2, ws // 2
 
-    number_slit = hs // d 
+    assert W > 0 and d > 0, "W and d must be positive."
+    assert W < d, f"Invalid config: slit width W={W} must be less than spacing d={d}"
+    assert W / dx >= 1, f"Slit width W={W} too small for sampling dx={dx} (W/dx = {W/dx:.2f} < 1 px)"
+    assert d / dx >= 1, f"Slit spacing d={d} too small for sampling dx={dx} (d/dx = {d/dx:.2f} < 1 px)"
 
-    aperture = np.zeros((h,w))
+    h, w = shape
+    aperture = np.zeros((h, w), dtype=np.float64)
 
-    y_start = cy - half_h
-    y_end = cy + half_h
+    # Convert dimensions from microns to pixels
+    hs_px = int(size[0] / dx)
+    ws_px = int(size[1] / dx)
+    W_px = int(W / dx)
+    d_px = int(d / dx)
 
-    for i in range(number_slit):
-                
-        slit_center_x = cx - (number_slit // 2) * d + i * d
+    # Image center
+    cy, cx = h // 2, w // 2
+    y_start = cy - hs_px // 2
+    y_end = cy + hs_px // 2
 
-        x_start = slit_center_x - W // 2
-        x_end = slit_center_x + W // 2
+    # Number of slits
+    num_slits = hs_px // d_px
 
+    for i in range(num_slits):
+        slit_cx = cx - (num_slits // 2) * d_px + i * d_px
+        x_start = slit_cx - W_px // 2
+        x_end = slit_cx + W_px // 2
+        aperture[x_start:x_end, y_start:y_end] = 1.0
 
-        aperture[x_start:x_end,y_start:y_end] = 1.0
     return aperture
 
 
-def square_aperture_array(shape=(512,512), square_size=5, spacing=20, grid_size=(5,5)):
+def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size=(5, 5), dx=1):
     """
     Create a 2D image with a grid of square apertures.
-    
+
     Args:
-        shape (tuple): Size of the output image (height, width).
-        square_size (int): Size of each square aperture (pixels).
-        spacing (int): Distance between squares (pixels), center-to-center.
-        grid_size (tuple): Number of squares in (rows, cols).
-        
+        shape (tuple): Size of the output image (height, width) in pixels.
+        square_size (float): Size of each square aperture (in microns).
+        spacing (float): Distance between square centers (in microns).
+        grid_size (tuple): Number of squares (rows, columns).
+        dx (float): Sampling rate (microns/pixel).
+
     Returns:
-        aperture (2D np.array): Binary aperture image with 1 inside squares, 0 outside.
+        2D np.array: Binary aperture image with 1 inside squares, 0 outside.
     """
+    assert dx > 0, "Sampling dx must be positive."
+    assert square_size > 0 and spacing > 0, "Square size and spacing must be positive."
+    assert square_size < spacing, "square_size must be smaller than spacing to avoid overlap."
+    assert grid_size[0] > 0 and grid_size[1] > 0, "Grid size must be positive."
+
     h, w = shape
-    aperture = np.zeros((h,w))
-    
-    # Calculate total grid size in pixels
-    grid_h = spacing * (grid_size[0] - 1) + square_size
-    grid_w = spacing * (grid_size[1] - 1) + square_size
-    
-    # Start coordinates to center the grid
+
+    # Convert physical sizes (microns) to pixel units
+    square_px = int(round(square_size / dx))
+    spacing_px = int(round(spacing / dx))
+
+    grid_h = spacing_px * (grid_size[0] - 1) + square_px
+    grid_w = spacing_px * (grid_size[1] - 1) + square_px
+
+    assert grid_h <= h and grid_w <= w, (
+        f"Grid size ({grid_h}x{grid_w} px) exceeds image size ({h}x{w} px). "
+        f"Try increasing image shape or reducing spacing/grid size."
+    )
+
+    aperture = np.zeros((h, w), dtype=np.float32)
+
+    # Center the grid
     start_y = (h - grid_h) // 2
     start_x = (w - grid_w) // 2
-    
+
     for i in range(grid_size[0]):  # rows
         for j in range(grid_size[1]):  # cols
-            y = start_y + i * spacing
-            x = start_x + j * spacing
-            aperture[y:y+square_size, x:x+square_size] = 1.0
-    
+            y = start_y + i * spacing_px
+            x = start_x + j * spacing_px
+            aperture[y:y + square_px, x:x + square_px] = 1.0
+
     return aperture
 
-def elliptical_aperture_array(shape=(512,512), big_diameter=10, small_diameter=5, spacing=25, grid_size=(5,5)):
+
+def elliptical_aperture_array(shape=(512, 512), big_diameter=10, small_diameter=5, spacing=25, grid_size=(5, 5), dx=1):
+    """
+    Create a 2D array with a grid of elliptical apertures.
+
+    Args:
+        shape (tuple): Output image shape (height, width) in pixels.
+        big_diameter (float): Major axis diameter (microns).
+        small_diameter (float): Minor axis diameter (microns).
+        spacing (float): Center-to-center distance between ellipses (microns).
+        grid_size (tuple): Number of ellipses (rows, cols).
+        dx (float): Sampling resolution in microns/pixel.
+
+    Returns:
+        2D np.array: Binary aperture image with 1 inside ellipses, 0 outside.
+    """
+    assert dx > 0, "dx must be positive."
+    assert big_diameter > 0 and small_diameter > 0 and spacing > 0, "Diameters and spacing must be positive."
+    assert big_diameter < spacing and small_diameter < spacing, "Ellipses must not overlap."
+    assert grid_size[0] > 0 and grid_size[1] > 0, "Grid dimensions must be positive."
+
     h, w = shape
-    aperture = np.zeros((h,w))
+    aperture = np.zeros((h, w), dtype=np.float32)
 
-    grid_h = spacing * (grid_size[0] - 1) + big_diameter
-    grid_w = spacing * (grid_size[1] - 1) + big_diameter
+    # Convert from microns to pixels
+    big_px = int(round(big_diameter / dx))
+    small_px = int(round(small_diameter / dx))
+    spacing_px = int(round(spacing / dx))
 
+    a = big_px / 2.0  # Semi-major axis
+    b = small_px / 2.0  # Semi-minor axis
+
+    # Total grid size in pixels
+    grid_h = spacing_px * (grid_size[0] - 1) + big_px
+    grid_w = spacing_px * (grid_size[1] - 1) + big_px
+
+    assert grid_h <= h and grid_w <= w, (
+        f"Grid size ({grid_h}x{grid_w} px) exceeds image size ({h}x{w} px)."
+    )
+
+    # Start positions to center the array
     start_y = (h - grid_h) / 2.0
     start_x = (w - grid_w) / 2.0
 
-    # Use meshgrid with indexing='ij' to get correct y,x coordinates
     yy, xx = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
-
-    a = big_diameter / 2.0
-    b = small_diameter / 2.0
 
     for i in range(grid_size[0]):
         for j in range(grid_size[1]):
-            center_y = start_y + i * spacing + a
-            center_x = start_x + j * spacing + a
+            center_y = start_y + i * spacing_px + a
+            center_x = start_x + j * spacing_px + a
 
-            # Equation of ellipse
+            # Ellipse equation
             mask = (((xx - center_x) / a) ** 2 + ((yy - center_y) / b) ** 2) <= 1
             aperture[mask] = 1.0
 
@@ -152,20 +209,6 @@ def zero_pad(U0, new_shape):
     padded[start_y:start_y + old_shape[0], start_x:start_x + old_shape[1]] = U0
     return padded
 
-def compute_fft2(aperture):
-    fft = np.fft.fftshift(np.fft.fft2(aperture))
-    intensity = np.abs(fft) ** 2
-    intensity /= intensity.max() 
-    return intensity
-
-def compute_fft2_log(aperture):
-    fft = np.fft.fftshift(np.fft.fft2(aperture))
-    magnitude = np.abs(fft)
-    log_magnitude = np.log1p(magnitude)
-    log_magnitude /= log_magnitude.max()  
-    return log_magnitude
-
-
 if __name__ == "__main__":
 
     app = QApplication([])
@@ -183,17 +226,18 @@ if __name__ == "__main__":
     z = 10                 # 10 meters propagation distance
     radius = 0.1e-3        # 0.1 mm aperture
 
-    aperture = circular_aperture((N,N), radius = radius, dx = dx)
+    #aperture = circular_aperture((N,N), radius = radius, dx = dx)
+    aperture = elliptical_aperture_array()
     #aperture = zero_pad(aperture, (1024,1024))
-    diffraction = fre_ir(aperture, wavelength, z, dx)
+    #diffraction = fre_ir(aperture, wavelength, z, dx)
 
     num_slices = 1
     # Repeat the aperture and FFT along z axis
     aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
-    fft_3d = np.repeat(diffraction[np.newaxis, :, :], num_slices, axis=0)
+    #fft_3d = np.repeat(diffraction[np.newaxis, :, :], num_slices, axis=0)
 
 
-    viewer = RealTimeCrossSectionViewer(fft_3d)
+    viewer = RealTimeCrossSectionViewer(aperture_3D)
 
     viewer.resize(1000, 800)
     viewer.show()
