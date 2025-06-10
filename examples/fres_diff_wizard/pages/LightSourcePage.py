@@ -6,9 +6,11 @@ from PyQt5.QtWidgets import (
 class LightSourcePage(QWizardPage):
     def __init__(self):
         super().__init__()
+        self.setTitle("Light source parameters")
+        self.setSubTitle("Define the light source parameters ")
         self.source_type = "Plane Wave"
         self.wavelength = "0.633"
-        self.beam_shape = "Helliptical"
+        self.beam_shape = "Elliptic"
         self.size = ("300","300")
         self.distance_unit = "µm"
 
@@ -86,16 +88,16 @@ class LightSourcePage(QWizardPage):
         self.plane_wave_shape_widget = QWidget()
         self.plane_wave_shape_layout = QHBoxLayout(self.plane_wave_shape_widget)
 
-        shape_label = QLabel("Label")
+        shape_label = QLabel("Shape")
 
-        self.option_h = QRadioButton("Helliptical")
+        self.option_e = QRadioButton("Elliptic")
         self.option_r = QRadioButton("Rectangular")
         
-        self.option_h.setChecked(True)  
+        self.option_e.setChecked(True)  
 
         self.plane_wave_shape_layout.addWidget(shape_label)
         self.plane_wave_shape_layout.addStretch()
-        self.plane_wave_shape_layout.addWidget(self.option_h)
+        self.plane_wave_shape_layout.addWidget(self.option_e)
         self.plane_wave_shape_layout.addWidget(self.option_r)
         
         self.plane_wave_size_widget = QWidget()
@@ -149,7 +151,7 @@ class LightSourcePage(QWizardPage):
             self.gaussian_widget.hide()
     def get_inputs(self):
         self.source_type = "Plane Wave" if self.option1.isChecked() else "Gaussian Beam"
-        self.beam_shape = "Helliptical" if self.option_h.isChecked() else "Rectangular"
+        self.beam_shape = "Elliptic" if self.option_e.isChecked() else "Rectangular"
         self.distance_unit = self.unit_combo.currentText()
         self.wavelength = self.wavelength_line_edit.text()
         if self.source_type == "Plane Wave":
