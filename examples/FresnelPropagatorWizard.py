@@ -7,7 +7,7 @@ from fres_diff_wizard.pages.AperturePage import AperturePage
 from fres_diff_wizard.pages.SummaryPage import SummaryPage
 
 
-class MyWizard(QWizard):
+class FresnelPropagatorWizard(QWizard):
     def __init__(self):
         super().__init__()
         
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    wizard = MyWizard()
+    wizard = FresnelPropagatorWizard()
     wizard.show()
     if wizard.exec_() == QWizard.Accepted:
         params = wizard.get_params()
