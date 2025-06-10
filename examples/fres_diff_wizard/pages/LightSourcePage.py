@@ -7,12 +7,13 @@ class LightSourcePage(QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Light source parameters")
-        self.setSubTitle("Define the light source parameters ")
+        self.setSubTitle("Define the light source parameters")
         self.source_type = "Plane Wave"
         self.wavelength = "0.633"
         self.beam_shape = "Elliptic"
         self.size = ("300","300")
         self.distance_unit = "µm"
+        self.waist = "300"
 
         self.setup_ui()
         self.setup_connections()
@@ -130,7 +131,7 @@ class LightSourcePage(QWizardPage):
         self.gaussian_widget_layout.addStretch()
         self.beam_waist_line_edit = QLineEdit()
         self.beam_waist_line_edit.setFixedWidth(100)
-        self.beam_waist_line_edit.setText(self.size[0])
+        self.beam_waist_line_edit.setText(self.waist)
         self.gaussian_widget_layout.addWidget(self.beam_waist_line_edit)
         self.page_layout.addWidget(self.gaussian_widget)
 
@@ -158,9 +159,11 @@ class LightSourcePage(QWizardPage):
             diameter_h = self.hdiameter_line_edit.text()
             diameter_w = self.wdiameter_line_edit.text()
             self.size = (diameter_h, diameter_w)
+            self.waist = None
         else:
+            self.size = None
             beam_waist = self.beam_waist_line_edit.text()
-            self.size = (beam_waist, beam_waist)
+            self.waist = beam_waist
 
         return {
             "source_type": self.source_type,
@@ -168,6 +171,7 @@ class LightSourcePage(QWizardPage):
             "unit": self.distance_unit,
             "wavelength": self.wavelength,
             "size": self.size,
+            "beam waist" : self.waist
         }
 
 if __name__ == "__main__":
