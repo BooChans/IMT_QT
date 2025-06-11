@@ -58,7 +58,7 @@ def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1):
     return aperture
 
 
-def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 0.5):
+def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 1):
     """
     Create a vertical slit aperture with multiple slits, using physical units.
 

@@ -31,10 +31,13 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     wizard = FresnelPropagatorWizard()
-    wizard.show()
-    if wizard.exec_() == QWizard.Accepted:
+
+    if wizard.exec_() == QWizard.Accepted:  # exec_() shows the wizard modally
         params = wizard.get_params()
         print(params)
-
-    
-    app.exec()
+        # Wizard automatically closes after exec_() completes
+        
+        sys.exit(app.exec_())  # Start main application event loop
+    else:
+        # Wizard was cancelled
+        sys.exit()

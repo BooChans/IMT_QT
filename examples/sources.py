@@ -25,7 +25,7 @@ def plane_wave_rectangular(shape = (512,512), size = (100,100), dx = 1):
     aperture = ((np.abs(X) <= wr/2) & (np.abs(Y) <= hr/2)).astype(np.float64)  # Square mask
     return aperture.astype(np.float64)
 
-def plane_wave_elliptical(shape = (512,512), size = (300,300), dx = 1):
+def plane_wave_elliptical(shape = (512,512), size = (200,300), dx = 1):
     """
     Create a centered elliptical aperture.
     
@@ -87,7 +87,7 @@ if __name__ == "__main__":
     z = 10                 # 10 meters propagation distance
     radius = 0.1e-3        # 0.1 mm aperture
 
-    aperture = gaussian_beam()
+    aperture = plane_wave_elliptical()
 
     num_slices = 1
     # Repeat the aperture and FFT along z axis

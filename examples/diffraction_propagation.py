@@ -1,6 +1,7 @@
 import numpy as np 
 
-def original_far_field(U0, wavelength, z, dx):
+
+def far_field(U0, wavelength, z, dx):
     """
     Original far-field diffraction (ZL-TF-ZL method).
     
@@ -14,11 +15,12 @@ def original_far_field(U0, wavelength, z, dx):
         Intensity at distance z.
     """
     U0 = np.complex128(U0)
-    N = U0.shape[0]  # Assume square input
+    N = max(U0.shape)  # Assume square input
     k = 2 * np.pi / wavelength
     
     # Calculate output pixel size (pixout)
     z_limit = N * dx**2 / wavelength
+    print(z_limit, N, dx, wavelength)
     if abs(z) < z_limit:
         raise ValueError(f"Use near-field method for z < {z_limit:.2f} µm")
     pixout = wavelength * abs(z) / (N * dx)
@@ -43,7 +45,7 @@ def original_far_field(U0, wavelength, z, dx):
     # Return intensity
     return np.abs(U2)**2
 
-def original_near_field(U0, wavelength, z, dx):
+def near_field(U0, wavelength, z, dx):
     """
     Original near-field Fresnel diffraction (ITF-TF-ZL method).
     
@@ -57,7 +59,7 @@ def original_near_field(U0, wavelength, z, dx):
         Intensity at distance z.
     """
     U0 = np.complex128(U0)
-    N = U0.shape[0]  # Assume square input
+    N = max(U0.shape)  # Assume square input
     k = 2 * np.pi / wavelength
     
     # Frequency grid (FFT-shifted)

@@ -41,7 +41,10 @@ class SummaryPage(QWizardPage):
         text += f"<b>Type:</b> {source_params['source_type']}<br>"
         text += f"<b>Shape:</b> {source_params['beam_shape']}<br>"
         text += f"<b>Wavelength:</b> {source_params['wavelength']} {source_params['unit']}<br>"
-        text += f"<b>Size:</b> {source_params['size'][0]} × {source_params['size'][1]} {source_params['unit']}<br>"
+        if source_params['size']:
+            text += f"<b>Size:</b> {source_params['size'][0]} × {source_params['size'][1]} {source_params['unit']}<br>"
+        else: 
+            text += f"<b>Beam Waist:</b> {source_params['beam waist']} {source_params['unit']}<br>"
         
         text += "<h3>Aperture Parameters:</h3>"
         text += f"<b>Shape:</b> {aperture_params['aperture_shape']}<br>"
@@ -64,4 +67,10 @@ class SummaryPage(QWizardPage):
         if aperture_params['square_size']:
             text += f"<b>Square Size:</b> {aperture_params['square_size']} {aperture_params['distance_unit']}<br>"
         
+        text += "<h3>Simulation Parameters:</h3>"
+        text += f"<b>Simulation distance z:</b> {aperture_params['simulation_distance']} {aperture_params['distance_unit']}<br>"
+         
+
+
+
         return text

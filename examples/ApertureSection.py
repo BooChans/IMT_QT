@@ -1,13 +1,21 @@
-import sys
+import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QWizard, QWizardPage, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QWidget, QComboBox, QRadioButton
+    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
+    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout,
 )
+from PyQt5.QtCore import Qt
+import pyqtgraph as pg
+from pyqtgraph import LineSegmentROI, InfiniteLine
+from scipy.ndimage import map_coordinates
+import sys
 
-class AperturePage(QWizardPage):
+from DiffractionSection import RealTimeCrossSectionViewer
+from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_apeture
+from automatic_sizing import auto_sizing_sampling
+
+class ApertureSection(QWidget):
     def __init__(self):
         super().__init__()
-        self.setTitle("Aperture parameters definition")
-        self.setSubTitle("Define the aperture parameters ")
         #basic shape details
         self.aperture_shape = "Elliptic"
         self.array_shape = ("512", "512")
@@ -30,11 +38,15 @@ class AperturePage(QWizardPage):
 
         self.simulation_distance = "1e6" #µm
 
+        self.aperture = elliptical_aperture(size = tuple(map(int, self.aperture_size)))
+        self.aperture = np.repeat(self.aperture[np.newaxis, :, :], 1, axis=0)
+        self.graph_widget = RealTimeCrossSectionViewer(self.aperture)
         self.setup_ui()
 
     def setup_ui(self):
 
         self.page_layout = QVBoxLayout(self)
+        self.page_layout.addWidget(self.graph_widget)
 
         self.setup_unit_widget()
         self.setup_simulation_distance()
@@ -273,7 +285,29 @@ class AperturePage(QWizardPage):
     def setup_connections(self):
         self.shape_combo.currentTextChanged.connect(self.update_aperture_shape_specifications)
         self.update_aperture_shape_specifications(self.aperture_shape)
-        
+
+        self.unit_combo.currentTextChanged.connect(self.update_aperture_graph)
+        self.dst_sim_line_edit.textChanged.connect(self.update_aperture_graph)
+
+        # Simple aperture
+        self.simple_size_h_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.simple_size_w_line_edit.textChanged.connect(self.update_aperture_graph)
+
+        # Slit aperture
+        self.slit_size_h_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.slit_size_w_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.slit_width_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.slit_distance_line_edit.textChanged.connect(self.update_aperture_graph)
+
+        # Array aperture
+        self.matrix_h_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.matrix_w_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.matrix_spacing_line_edit.textChanged.connect(self.update_aperture_graph)
+
+        self.hel_bd_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.hel_sd_line_edit.textChanged.connect(self.update_aperture_graph)
+        self.squ_square_size_line_edit.textChanged.connect(self.update_aperture_graph)        
+
     def update_aperture_shape_specifications(self, text):
         
         # Hide all widgets first
@@ -296,6 +330,7 @@ class AperturePage(QWizardPage):
         elif text == "Square array":
             self.array_aperture_widget.show()
             self.squ_array_widget.show()
+        self.update_aperture_graph()
 
     def get_inputs(self):
         """Collect all aperture parameters based on current selection"""
@@ -327,6 +362,21 @@ class AperturePage(QWizardPage):
                 self.matrix_w_line_edit.text()
             )
             self.array_spacing = self.matrix_spacing_line_edit.text()
+            Mh = int(self.matrix_h_line_edit.text())
+            Mw = int(self.matrix_w_line_edit.text())
+            spacing = float(self.matrix_spacing_line_edit.text())
+
+            if self.aperture_shape == "Square array":
+                aperture_size = float(self.squ_square_size_line_edit.text())
+            elif self.aperture_shape == "Elliptic array":
+                aperture_size = float(self.hel_bd_line_edit.text())
+            else:
+                aperture_size = 0  # fallback if needed
+
+            height = (Mh - 1) * spacing + aperture_size
+            width  = (Mw - 1) * spacing + aperture_size
+
+            self.size = (str(height), str(width))
 
         return {
             "aperture_shape": self.aperture_shape,
@@ -341,16 +391,44 @@ class AperturePage(QWizardPage):
             "small_diameter": self.small_diameter if self.aperture_shape == "Elliptic array" else None,
             "square_size": self.square_size if self.aperture_shape == "Square array" else None
         }
+    def generate_aperture(self):
+        params = self.get_inputs()
+        shape = params["aperture_shape"]
+
+        if shape == "Elliptic":
+            size = tuple(map(int, params["aperture_size"]))
+            return elliptical_aperture(size=size)
+
+        elif shape == "Rectangular":
+            size = tuple(map(int, params["aperture_size"]))
+            return rectangular_aperture(size=size)
+
+        elif shape == "Slit":
+            shape = tuple(map(int, self.aperture_size))
+            width = int(params["slit_width"])
+            distance = int(params["slit_distance"])
+            return slit_apeture(size=shape, d=distance, W=width)
+
+        elif shape == "Elliptic array":
+            matrix = tuple(map(int, params["array_matrix"]))
+            spacing = int(params["array_spacing"])
+            big_d = int(params["big_diameter"])
+            small_d = int(params["small_diameter"])
+            return elliptical_aperture_array(grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d)
+
+        elif shape == "Square array":
+            matrix = tuple(map(int, params["array_matrix"]))
+            spacing = int(params["array_spacing"])
+            square_size = int(params["square_size"])
+            return square_aperture_array(grid_size=matrix, spacing=spacing, square_size=square_size)
+              
+    def update_aperture_graph(self):
+        aperture = self.generate_aperture()
+        self.aperture = np.repeat(aperture[np.newaxis, :, :], 1, axis=0)
+        self.graph_widget.update_data(self.aperture)
+
 if __name__ == "__main__":
-
     app = QApplication(sys.argv)
-    wizard = QWizard()
-
-    wizard.setMinimumSize(1300, 1100)
-
-    page = AperturePage()
-    wizard.addPage(page)
-    wizard.finished.connect(lambda: print(page.get_inputs()))
-    wizard.show()
+    widget = ApertureSection()
+    widget.show()
     app.exec()
-
