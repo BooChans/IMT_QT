@@ -206,10 +206,10 @@ class DiffractionPropagator(QMainWindow):
             array_shape = (str(N), str(N))
             self.source_section.array_shape = array_shape
             self.aperture_section.array_shape = array_shape
-            self.source_section.update_attributes()
-            self.source_section.update_graph()
-            self.aperture_section.sync_attributes_from_widgets()
-            self.aperture_section.update_aperture_graph()
+        self.source_section.update_attributes()
+        self.source_section.update_graph()
+        self.aperture_section.sync_attributes_from_widgets()
+        self.aperture_section.update_aperture_graph()
         self.simulation_section.update_sampling_line()
 
 
