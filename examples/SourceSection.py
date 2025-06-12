@@ -11,7 +11,7 @@ import sys
 
 from DiffractionSection import RealTimeCrossSectionViewer
 from sources import gaussian_beam, plane_wave_elliptical, plane_wave_rectangular
-from automatic_sizing import auto_sizing_sampling
+from automatic_sizing import auto_sampling_N
 
 class SourceSection(QWidget):
     def __init__(self):
@@ -22,6 +22,8 @@ class SourceSection(QWidget):
         self.size = ("300","300")
         self.distance_unit = "µm"
         self.waist = "300"
+        self.sampling = "1.0" #µm*
+        self.array_shape = ("512","512")
 
         self.light_source = plane_wave_elliptical(size=tuple(map(int, self.size)))
         self.light_source = np.repeat(self.light_source[np.newaxis, :, :], 1, axis=0)
@@ -33,6 +35,7 @@ class SourceSection(QWidget):
     def setup_ui(self):
         
         self.page_layout = QVBoxLayout(self)
+        self.page_layout.addWidget(QLabel("Illumination"))
         self.page_layout.addWidget(self.graph_widget)
 
         self.setup_unit_widget()
@@ -194,6 +197,7 @@ class SourceSection(QWidget):
         self.size = inputs["size"]
         self.waist = inputs["beam waist"]
 
+
     def get_inputs(self):
         self.source_type = "Plane Wave" if self.option1.isChecked() else "Gaussian Beam"
         self.beam_shape = "Elliptic" if self.option_e.isChecked() else "Rectangular"
@@ -220,46 +224,43 @@ class SourceSection(QWidget):
         }
     def update_graph(self):
         inputs = self.get_inputs()
-        try:
-            dx = 1  # sampling step, adjust if you want to link to physical unit scaling
-            
-            if inputs["source_type"] == "Plane Wave":
-                # Extract physical size from inputs
-                # size = (height, width) in physical units for apertures
-                try:
-                    h_size = float(inputs["size"][0])
-                    w_size = float(inputs["size"][1])
-                except Exception as e:
-                    print("Invalid size input:", e)
-                    return
-
-                shape = (512, 512)  # Fixed pixel resolution for your grid — can be parameterized
-
-                if inputs["beam_shape"] == "Elliptic":
-                    new_source = plane_wave_elliptical(shape=shape, size=(h_size, w_size), dx=dx)
-                else:
-                    new_source = plane_wave_rectangular(shape=shape, size=(h_size, w_size), dx=dx)
-
-                # Add batch dimension for compatibility
-                new_source = np.expand_dims(new_source, axis=0)
-
+        self.graph_widget.sampling = float(self.sampling)
+        dx = float(self.sampling)  # sampling step, adjust if you want to link to physical unit scaling
+        if inputs["source_type"] == "Plane Wave":
+            # Extract physical size from inputs
+            # size = (height, width) in physical units for apertures
+            try:
+                h_size = float(inputs["size"][0])
+                w_size = float(inputs["size"][1])
+            except Exception as e:
+                print("Invalid size input:", e)
+                return
+            array_shape = tuple(map(int, self.array_shape))
+            shape = array_shape  # Fixed pixel resolution for your grid — can be parameterized
+            assert max(h_size, w_size) < max((dx*shape[0], dx*shape[1]))
+            if inputs["beam_shape"] == "Elliptic":
+                new_source = plane_wave_elliptical(shape=shape, size=(h_size, w_size), dx=dx)
             else:
-                # Gaussian beam generation with waist
-                try:
-                    waist = float(inputs["beam waist"])
-                except Exception as e:
-                    print("Invalid beam waist:", e)
-                    return
+                new_source = plane_wave_rectangular(shape=shape, size=(h_size, w_size), dx=dx)
 
-                base_source = gaussian_beam(w0=waist)
-                new_source = np.expand_dims(base_source, axis=0)
+            # Add batch dimension for compatibility
+            new_source = np.expand_dims(new_source, axis=0)
 
-            # Update graph widget with new source data
-            self.light_source = new_source
-            self.graph_widget.update_data(new_source)
+        else:
+            # Gaussian beam generation with waist
+            try:
+                waist = float(inputs["beam waist"])
+            except Exception as e:
+                print("Invalid beam waist:", e)
+                return
 
-        except Exception as e:
-            print("Error updating graph:", e)
+            base_source = gaussian_beam(w0=waist)
+            new_source = np.expand_dims(base_source, axis=0)
+
+        # Update graph widget with new source data
+        self.light_source = new_source
+        self.graph_widget.update_data(new_source)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -6,7 +6,7 @@ from windows import RealTimeCrossSectionViewer
 
 
 
-def elliptical_aperture(shape=(512,512), size = (300,300), dx = 1):
+def elliptical_aperture(shape=(512,512), size = (300,300), dx = 1.0):
     """
     Create a centered elliptical aperture.
     
@@ -35,7 +35,7 @@ def elliptical_aperture(shape=(512,512), size = (300,300), dx = 1):
     return aperture.astype(np.float64)
 
 
-def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1):
+def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1.0):
     """
     Create a centered rectangular aperture.
 
@@ -58,7 +58,7 @@ def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1):
     return aperture
 
 
-def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 1):
+def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 1.0):
     """
     Create a vertical slit aperture with multiple slits, using physical units.
 
@@ -104,7 +104,7 @@ def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 1):
     return aperture
 
 
-def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size=(5, 5), dx=1):
+def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size=(5, 5), dx=1.0):
     """
     Create a 2D image with a grid of square apertures.
 
@@ -152,7 +152,7 @@ def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size
     return aperture
 
 
-def elliptical_aperture_array(shape=(512, 512), big_diameter=10, small_diameter=5, spacing=25, grid_size=(5, 5), dx=1):
+def elliptical_aperture_array(shape=(512, 512), big_diameter=10, small_diameter=5, spacing=25, grid_size=(5, 5), dx=1.0):
     """
     Create a 2D array with a grid of elliptical apertures.
 
@@ -227,6 +227,29 @@ def zero_pad(U0, new_shape):
 
     padded[start_y:start_y + old_shape[0], start_x:start_x + old_shape[1]] = U0
     return padded
+
+
+def estimate_aperture_extent(big_diameter, small_diameter, spacing, grid_size, dx=1.0):
+    """
+    Estimate the total physical size (in microns) of a grid of elliptical or square apertures.
+
+    Args:
+        big_diameter (float): Major diameter (μm) — use square size for square apertures.
+        small_diameter (float): Minor diameter (μm) — ignored for size, included for symmetry.
+        spacing (float): Center-to-center spacing between apertures (μm).
+        grid_size (tuple): (rows, columns) — number of apertures.
+        dx (float): Pixel size (μm/px), for reference.
+
+    Returns:
+        (height_um, width_um): Physical extent of the aperture grid (μm)
+    """
+    rows, cols = grid_size
+    assert rows > 0 and cols > 0
+
+    height_um = spacing * (rows - 1) + big_diameter
+    width_um = spacing * (cols - 1) + small_diameter
+
+    return "height_um", "width_um"
 
 if __name__ == "__main__":
 

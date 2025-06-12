@@ -10,8 +10,7 @@ from scipy.ndimage import map_coordinates
 import sys
 
 from DiffractionSection import RealTimeCrossSectionViewer
-from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_apeture
-from automatic_sizing import auto_sizing_sampling
+from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_apeture, estimate_aperture_extent
 
 class ApertureSection(QWidget):
     def __init__(self):
@@ -37,6 +36,8 @@ class ApertureSection(QWidget):
         self.distance_unit = "µm"
 
         self.simulation_distance = "1e6" #µm
+        self.sampling = "1.0" #µm
+
 
         self.aperture = elliptical_aperture(size = tuple(map(int, self.aperture_size)))
         self.aperture = np.repeat(self.aperture[np.newaxis, :, :], 1, axis=0)
@@ -46,6 +47,7 @@ class ApertureSection(QWidget):
     def setup_ui(self):
 
         self.page_layout = QVBoxLayout(self)
+        self.page_layout.addWidget(QLabel("Diffracting object"))
         self.page_layout.addWidget(self.graph_widget)
 
         self.setup_unit_widget()
@@ -376,7 +378,7 @@ class ApertureSection(QWidget):
             height = (Mh - 1) * spacing + aperture_size
             width  = (Mw - 1) * spacing + aperture_size
 
-            self.size = (str(height), str(width))
+            self.aperture_size = (str(height), str(width))
 
         return {
             "aperture_shape": self.aperture_shape,
@@ -394,38 +396,93 @@ class ApertureSection(QWidget):
     def generate_aperture(self):
         params = self.get_inputs()
         shape = params["aperture_shape"]
-
+        array_shape = tuple(map(int,self.array_shape))
+        dx = float(self.sampling)
         if shape == "Elliptic":
             size = tuple(map(int, params["aperture_size"]))
-            return elliptical_aperture(size=size)
+            assert max(size) < max((dx*array_shape[0], dx*array_shape[1]))
+            return elliptical_aperture(shape=array_shape,size=size, dx = dx)
 
         elif shape == "Rectangular":
             size = tuple(map(int, params["aperture_size"]))
-            return rectangular_aperture(size=size)
+            assert max(size) < max((dx*array_shape[0], dx*array_shape[1]))
+            return rectangular_aperture(shape=array_shape,size=size, dx=dx)
 
         elif shape == "Slit":
-            shape = tuple(map(int, self.aperture_size))
+            size = tuple(map(int, self.aperture_size))
             width = int(params["slit_width"])
             distance = int(params["slit_distance"])
-            return slit_apeture(size=shape, d=distance, W=width)
+            assert max(size) < max((dx*array_shape[0], dx*array_shape[1]))
+            return slit_apeture(shape=array_shape,size=size, d=distance, W=width, dx=dx)
 
         elif shape == "Elliptic array":
             matrix = tuple(map(int, params["array_matrix"]))
             spacing = int(params["array_spacing"])
             big_d = int(params["big_diameter"])
             small_d = int(params["small_diameter"])
-            return elliptical_aperture_array(grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d)
+            new_size = estimate_aperture_extent(big_diameter=big_d,small_diameter=small_d, spacing=spacing, grid_size=matrix)
+            assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
+            self.aperture_size = new_size
+            return elliptical_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d, dx=dx)
 
         elif shape == "Square array":
             matrix = tuple(map(int, params["array_matrix"]))
             spacing = int(params["array_spacing"])
             square_size = int(params["square_size"])
-            return square_aperture_array(grid_size=matrix, spacing=spacing, square_size=square_size)
+            new_size = estimate_aperture_extent(big_diameter=big_d,small_diameter=small_d, spacing=spacing, grid_size=matrix)
+            assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
+            self.aperture_size = new_size
+            return square_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, square_size=square_size, dx=dx)
               
     def update_aperture_graph(self):
+        self.sync_attributes_from_widgets()  # sync attributes from widgets before generating aperture
         aperture = self.generate_aperture()
         self.aperture = np.repeat(aperture[np.newaxis, :, :], 1, axis=0)
         self.graph_widget.update_data(self.aperture)
+
+    def sync_attributes_from_widgets(self):
+        self.aperture_shape = self.shape_combo.currentText()
+        self.distance_unit = self.unit_combo.currentText()
+        self.simulation_distance = self.dst_sim_line_edit.text()
+        self.graph_widget.sampling = float(self.sampling)
+
+
+        if self.aperture_shape in ["Elliptic", "Rectangular"]:
+            self.aperture_size = (self.simple_size_h_line_edit.text(), self.simple_size_w_line_edit.text())
+        elif self.aperture_shape == "Slit":
+            self.aperture_size = (self.slit_size_h_line_edit.text(), self.slit_size_w_line_edit.text())
+            self.slit_width = self.slit_width_line_edit.text()
+            self.slit_distance = self.slit_distance_line_edit.text()
+        elif self.aperture_shape == "Elliptic array":
+            self.array_matrix = (self.matrix_h_line_edit.text(), self.matrix_w_line_edit.text())
+            self.array_spacing = self.matrix_spacing_line_edit.text()
+            self.big_diameter = self.hel_bd_line_edit.text()
+            self.small_diameter = self.hel_sd_line_edit.text()
+        elif self.aperture_shape == "Square array":
+            self.array_matrix = (self.matrix_h_line_edit.text(), self.matrix_w_line_edit.text())
+            self.array_spacing = self.matrix_spacing_line_edit.text()
+            self.square_size = self.squ_square_size_line_edit.text()
+        if "array" in self.aperture_shape.lower():
+            self.array_matrix = (
+                self.matrix_h_line_edit.text(),
+                self.matrix_w_line_edit.text()
+            )
+            self.array_spacing = self.matrix_spacing_line_edit.text()
+            Mh = int(self.matrix_h_line_edit.text())
+            Mw = int(self.matrix_w_line_edit.text())
+            spacing = float(self.matrix_spacing_line_edit.text())
+
+            if self.aperture_shape == "Square array":
+                aperture_size = float(self.squ_square_size_line_edit.text())
+            elif self.aperture_shape == "Elliptic array":
+                aperture_size = float(self.hel_bd_line_edit.text())
+            else:
+                aperture_size = 0  # fallback if needed
+
+            height = (Mh - 1) * spacing + aperture_size
+            width  = (Mw - 1) * spacing + aperture_size
+
+            self.aperture_size = (str(height), str(width))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

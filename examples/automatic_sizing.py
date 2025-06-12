@@ -1,52 +1,44 @@
 import numpy as np
 
-def auto_sizing_sampling(z, wavelength, size_source, size_aperture):
+def auto_sampling_N(source_size, apertures_size, shape = (512,512), filling_rate = 0.59):
+    h_smax = max(source_size)
+    h_amax = max(apertures_size)
+    h, _ = shape
+    if h_smax > h_amax:
+        dx = h_smax/(h*filling_rate)
+    else: 
+        dx = h_amax/(h*filling_rate)
+    return dx
 
-    h_ap = max(size_aperture)
-    h_src = max(size_source)
+def auto_shaping_dx(source_size, aperture_size, dx):
+    h_smax = max(source_size) 
+    h_amax = max(aperture_size)
+    if h_smax > h_amax:
+        N = int(2 ** (np.ceil(np.log2(h_smax/dx))))
+    else: 
+        N = int(2 ** (np.ceil(np.log2(h_amax/dx))))
+    return N
 
-    print(h_ap, z, wavelength)
-    dx_aperture = wavelength * z / (2 * h_ap)
-    dx_source =  h_src/4
-    print(dx_aperture, dx_source)
-    dx = np.min([dx_aperture, dx_source])
+def zero_pad(U0, new_shape):
+    """
+    Pads a 3D array U0 with zeros to match new_shape, preserving batch dimension.
 
-    L = np.max([h_ap, h_src]) +  + (2 * wavelength * z / dx)
+    Args:
+        U0 (3D np.array): Original input field with shape (1, H, W).
+        new_shape (tuple): Desired spatial shape (new_H, new_W) after padding.
 
-    N = int(2 ** np.ceil(np.log2(L / dx)))
+    Returns:
+        3D np.array: Zero-padded array with U0[0] centered, shape (1, new_H, new_W).
+    """
+    assert U0.ndim == 3 and U0.shape[0] == 1, "Input must have shape (1, H, W)"
+    
+    old_h, old_w = U0.shape[1:]
+    new_h, new_w = new_shape
 
-    return dx, N
+    padded = np.zeros((1, new_h, new_w), dtype=U0.dtype)
 
+    start_y = (new_h - old_h) // 2
+    start_x = (new_w - old_w) // 2
 
-def auto_sizing_sampling_fresnel(z, wavelength, size_source, size_aperture, oversampling=2):
-    # Max physical aperture and source sizes (microns or consistent units)
-    h_ap = max(size_aperture)
-    h_src = max(size_source)
-
-    # Estimate maximum size needed to cover source and aperture
-    L0 = max(h_ap, h_src)
-
-    # Fresnel length scale for diffraction spread
-    L_diff = np.sqrt(wavelength * z)
-
-    # Base sampling interval must resolve the phase curvature:
-    # dx <= sqrt(lambda * z / N)
-    # We'll start by estimating dx from source and aperture resolution:
-    dx_src = h_src / 4  # resolve source adequately
-    dx_ap = wavelength * z / (2 * h_ap)  # Fresnel criterion
-
-    # Choose the smaller dx and apply oversampling for safety
-    dx = np.min([dx_src, dx_ap]) / oversampling
-
-    # Determine simulation window size - pad to avoid wrap-around in FFT
-    L = L0 + 4 * L_diff
-
-    # Number of points, rounded up to next power of 2 for FFT
-    N = int(2 ** np.ceil(np.log2(L / dx)))
-
-    # Recalculate dx for integer N and window size
-    dx = L / N
-
-    print(f"Fresnel auto-sizing:\n  dx = {dx:.3e}\n  N = {N}\n  Window L = {L:.3e}")
-
-    return dx, N
+    padded[0, start_y:start_y + old_h, start_x:start_x + old_w] = U0[0]
+    return padded

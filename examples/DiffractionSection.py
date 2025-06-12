@@ -1,11 +1,11 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout
+    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem 
 )
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
-from pyqtgraph import LineSegmentROI, InfiniteLine
+from pyqtgraph import LineSegmentROI, InfiniteLine, TextItem
 from scipy.ndimage import map_coordinates
 
 
@@ -18,7 +18,10 @@ class RealTimeCrossSectionViewer(QWidget):
         super().__init__(parent)
         self.volume = volume_data
         self.current_slice = 0
+        self.sampling = 1.0
+        self.unit_distance = "µm"
         self.setup_ui()
+        self.add_overlay_scale_bar(pixel_length=10)
         self.setup_interaction()
     def setup_ui(self):
         self.setWindowTitle("FFT Cross-Section Viewer")
@@ -33,12 +36,10 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slice_view.ui.roiBtn.hide()
         self.slice_view.ui.menuBtn.hide()
 
-        self.layout.addWidget(QLabel("Zoom:"))
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(1000)
         self.slider.setValue(0)
-        self.layout.addWidget(self.slider)
 
         self.slice_view.setImage(self.volume[self.current_slice])
         self.splitter.addWidget(self.slice_view)
@@ -65,6 +66,10 @@ class RealTimeCrossSectionViewer(QWidget):
 
         self.splitter.addWidget(self.cross_section_container)
         self.layout.addWidget(self.splitter)
+
+        self.layout.addWidget(QLabel("Zoom:"))
+        self.layout.addWidget(self.slider) #Zoom Slider
+
 
         self.toggle_line_cb = QCheckBox("Show Line ROI & Cross-section")
         self.layout.addWidget(self.toggle_line_cb)
@@ -179,7 +184,7 @@ class RealTimeCrossSectionViewer(QWidget):
             self.update_cross_section()  # Restore data
     def update_cross_section(self):
         try:
-            pixel_size = 1
+            pixel_size = self.sampling
             state = self.line.getState()
             start = state['points'][0] + state['pos']
             end = state['points'][1] + state['pos']
@@ -304,7 +309,79 @@ class RealTimeCrossSectionViewer(QWidget):
         self.volume = new_source
         self.current_slice = 0
         self.slice_view.setImage(self.volume[self.current_slice])
+        self.add_overlay_scale_bar(pixel_length=10)
 
+    def add_overlay_scale_bar(self, pixel_length=100):
+        """
+        Adds a floating overlay scale bar that stays in the same screen position.
+        The bar represents a length in data units (pixels * sampling).
+        """
+        view = self.slice_view.getView()
+        scene = view.scene()
+
+        # Remove existing overlay if needed
+        if hasattr(self, '_overlay_bar'):
+            scene.removeItem(self._overlay_bar)
+            scene.removeItem(self._overlay_label)
+
+        # Create bar in scene coords (temporary, will reposition)
+        self._overlay_bar = QGraphicsLineItem()
+        self._overlay_bar.setPen(pg.mkPen((255, 165, 0), width=4))
+        scene.addItem(self._overlay_bar)
+
+        # Create label
+        self._overlay_label = pg.TextItem(
+            html=f"<div style='color:orange; font-weight: bold; font-size: 8pt;'>{pixel_length * self.sampling:.2f} µm</div>",
+            anchor=(0, 1)
+        )
+        scene.addItem(self._overlay_label)
+
+        # Store for updates
+        self._overlay_length = pixel_length
+
+        # Hook into updates
+        view.sigRangeChanged.connect(self.update_overlay_scale_bar_position)
+        self.update_overlay_scale_bar_position()
+
+    def update_overlay_scale_bar_position(self):
+        """
+        Updates the screen position and size of the overlay scale bar.
+        Ensures the bar does not exceed a certain fraction of the view width.
+        """
+        view = self.slice_view.getView()
+        vb = view
+        scene = view.scene()
+        pixel_length = self._overlay_length
+        max_fraction = 0.25  # scale bar won't be more than 25% of view width
+
+        # Get viewable data range in x-axis (in data units)
+        view_range = vb.viewRange()
+        x_range = view_range[0]
+        max_data_length = (x_range[1] - x_range[0]) * max_fraction
+
+        # Clamp the length if needed
+        clamped_length = min(pixel_length, max_data_length)
+
+        # Transform clamped length to scene units
+        p1 = vb.mapViewToScene(pg.QtCore.QPointF(0, 0))
+        p2 = vb.mapViewToScene(pg.QtCore.QPointF(clamped_length, 0))
+        bar_length_scene = p2.x() - p1.x()
+
+        # Position the bar at bottom-left corner of the view
+        view_rect = vb.sceneBoundingRect()
+        margin = 20  # pixels
+        y = view_rect.bottom() - margin
+        x_start = view_rect.left() + margin
+        x_end = x_start + bar_length_scene
+
+        self._overlay_bar.setLine(x_start, y, x_end, y)
+
+        # Update label text and position
+        physical_length = clamped_length * self.sampling
+        self._overlay_label.setHtml(
+            f"<div style='color:orange; font-weight: bold; font-size: 8pt;'>{physical_length:.2f} {self.unit_distance}</div>"
+        )
+        self._overlay_label.setPos((x_start + x_end) / 2, y - 10)
 
 if __name__ == "__main__":
 
