@@ -116,6 +116,7 @@ class DiffractionPropagator(QMainWindow):
 
 
         self.simulation_section.sampling_line_edit.editingFinished.connect(self.update_window)
+        self.simulation_section.checkbox.stateChanged.connect(self.restore_auto_sampling)
 
     def run_simulation(self):
         # 1. Get the aperture mask
@@ -138,7 +139,6 @@ class DiffractionPropagator(QMainWindow):
         N_target = int(self.simulation_section.resolution_multiplier) * N_win
         if N_win < N_target :
             new_shape = (N_target, N_target)
-            print(new_shape)
             source = zero_pad(source, new_shape)
             aperture = zero_pad(aperture, new_shape)
 
@@ -160,9 +160,7 @@ class DiffractionPropagator(QMainWindow):
         aperture_array_shape = tuple(map(int,self.aperture_section.array_shape))
         assert self.source_section.sampling == self.aperture_section.sampling
         dx = float(self.source_section.sampling)
-        print(aperture_size, (dx*aperture_array_shape[0], dx*aperture_array_shape[1]), "aperture size and dx*N")
         if max(source_size) > max((dx*light_source_array_shape[0], dx*light_source_array_shape[1])) or max(aperture_size) > max((dx*aperture_array_shape[0], dx*aperture_array_shape[1])):
-            print("hi, you're in the loop")
             dx = auto_sampling_N(source_size=source_size, apertures_size=aperture_size, shape=light_source_array_shape)
             dx_str = str(dx)
             self.source_section.sampling = dx_str
@@ -198,12 +196,16 @@ class DiffractionPropagator(QMainWindow):
         aperture_size = tuple(map(int,aperture_params['aperture_size']))
 
         N = auto_shaping_dx(source_size=source_size, aperture_size=aperture_size, dx = dx)
-        N < 2048, "Sampling is too low"
+        assert N < 2049, "Sampling is too low"
         self.source_section.sampling = dx_str
         self.aperture_section.sampling = dx_str
         self.simulation_section.sampling = dx_str
-        if N > 512 and N < 2048:
+        if N > 512 and N < 2049:
             array_shape = (str(N), str(N))
+            self.source_section.array_shape = array_shape
+            self.aperture_section.array_shape = array_shape
+        elif N < 512: 
+            array_shape = (512, 512)
             self.source_section.array_shape = array_shape
             self.aperture_section.array_shape = array_shape
         self.source_section.update_attributes()
@@ -216,6 +218,19 @@ class DiffractionPropagator(QMainWindow):
     def update_samlping_input(self):
         self.simulation_section.update_sampling_line()
 
+    def restore_auto_sampling(self, state):
+        if state == Qt.Unchecked: 
+            array_shape = (512, 512)
+            self.source_section.array_shape = array_shape
+            self.aperture_section.array_shape = array_shape
+            self.update_sampling()
+            self.source_section.update_attributes()
+            self.source_section.update_graph()
+            self.aperture_section.sync_attributes_from_widgets()
+            self.aperture_section.update_aperture_graph()
+            self.simulation_section.update_sampling_line()
+
+        
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
