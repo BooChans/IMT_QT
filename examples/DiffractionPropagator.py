@@ -199,10 +199,10 @@ class DiffractionPropagator(QMainWindow):
 
         N = auto_shaping_dx(source_size=source_size, aperture_size=aperture_size, dx = dx)
         N < 2048, "Sampling is too low"
+        self.source_section.sampling = dx_str
+        self.aperture_section.sampling = dx_str
+        self.simulation_section.sampling = dx_str
         if N > 512 and N < 2048:
-            self.source_section.sampling = dx_str
-            self.aperture_section.sampling = dx_str
-            self.simulation_section.sampling = dx_str
             array_shape = (str(N), str(N))
             self.source_section.array_shape = array_shape
             self.aperture_section.array_shape = array_shape
