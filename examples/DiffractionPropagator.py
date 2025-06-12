@@ -153,8 +153,8 @@ class DiffractionPropagator(QMainWindow):
         source_params = self.source_section.get_inputs()
 
         # 3. Get wavelength, distance, pixel size
-        source_size = tuple(map(int,source_params['size']))
-        aperture_size = tuple(map(int,aperture_params['aperture_size']))
+        source_size = tuple(map(float,source_params['size']))
+        aperture_size = tuple(map(float,aperture_params['aperture_size']))
 
         light_source_array_shape = tuple(map(int,self.source_section.array_shape))
         aperture_array_shape = tuple(map(int,self.aperture_section.array_shape))

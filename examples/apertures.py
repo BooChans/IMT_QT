@@ -249,7 +249,7 @@ def estimate_aperture_extent(big_diameter, small_diameter, spacing, grid_size, d
     height_um = spacing * (rows - 1) + big_diameter
     width_um = spacing * (cols - 1) + small_diameter
 
-    return "height_um", "width_um"
+    return height_um, width_um
 
 if __name__ == "__main__":
 

@@ -384,14 +384,14 @@ class ApertureSection(QWidget):
             "aperture_shape": self.aperture_shape,
             "distance_unit": self.distance_unit,
             "simulation_distance" : self.simulation_distance,
-            "aperture_size": self.aperture_size if (self.aperture_shape != "Slit" and "array" not in self.aperture_shape.lower()) else None,
-            "slit_width": self.slit_width if self.aperture_shape == "Slit" else None,
-            "slit_distance": self.slit_distance if self.aperture_shape == "Slit" else None,
-            "array_matrix": self.array_matrix if "array" in self.aperture_shape.lower() else None,
-            "array_spacing": self.array_spacing if "array" in self.aperture_shape.lower() else None,
-            "big_diameter": self.big_diameter if self.aperture_shape == "Elliptic array" else None,
-            "small_diameter": self.small_diameter if self.aperture_shape == "Elliptic array" else None,
-            "square_size": self.square_size if self.aperture_shape == "Square array" else None
+            "aperture_size": self.aperture_size,
+            "slit_width": self.slit_width,
+            "slit_distance": self.slit_distance,
+            "array_matrix": self.array_matrix,
+            "array_spacing": self.array_spacing,
+            "big_diameter": self.big_diameter,
+            "small_diameter": self.small_diameter,
+            "square_size": self.square_size
         }
     def generate_aperture(self):
         params = self.get_inputs()
@@ -421,17 +421,19 @@ class ApertureSection(QWidget):
             big_d = int(params["big_diameter"])
             small_d = int(params["small_diameter"])
             new_size = estimate_aperture_extent(big_diameter=big_d,small_diameter=small_d, spacing=spacing, grid_size=matrix)
+            print(new_size, (dx*array_shape[0], dx*array_shape[1]))
             assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
-            self.aperture_size = new_size
+            self.aperture_size = tuple(map(str,new_size))
+            print(self.aperture_size)
             return elliptical_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d, dx=dx)
 
         elif shape == "Square array":
             matrix = tuple(map(int, params["array_matrix"]))
             spacing = int(params["array_spacing"])
             square_size = int(params["square_size"])
-            new_size = estimate_aperture_extent(big_diameter=big_d,small_diameter=small_d, spacing=spacing, grid_size=matrix)
+            new_size = estimate_aperture_extent(big_diameter=square_size,small_diameter=square_size, spacing=spacing, grid_size=matrix)
             assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
-            self.aperture_size = new_size
+            self.aperture_size = tuple(map(str,new_size))
             return square_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, square_size=square_size, dx=dx)
               
     def update_aperture_graph(self):
