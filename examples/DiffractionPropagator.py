@@ -198,7 +198,7 @@ class DiffractionPropagator(QMainWindow):
         aperture_size = tuple(map(int,aperture_params['aperture_size']))
 
         N = auto_shaping_dx(source_size=source_size, aperture_size=aperture_size, dx = dx)
-        assert N > 512 and N < 2048, "Sampling is too low"
+        N < 2048, "Sampling is too low"
         if N > 512 and N < 2048:
             self.source_section.sampling = dx_str
             self.aperture_section.sampling = dx_str
