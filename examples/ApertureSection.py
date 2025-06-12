@@ -421,10 +421,8 @@ class ApertureSection(QWidget):
             big_d = int(params["big_diameter"])
             small_d = int(params["small_diameter"])
             new_size = estimate_aperture_extent(big_diameter=big_d,small_diameter=small_d, spacing=spacing, grid_size=matrix)
-            print(new_size, (dx*array_shape[0], dx*array_shape[1]))
             assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
             self.aperture_size = tuple(map(str,new_size))
-            print(self.aperture_size)
             return elliptical_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d, dx=dx)
 
         elif shape == "Square array":
