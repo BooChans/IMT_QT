@@ -46,8 +46,7 @@ class RealTimeCrossSectionViewer(QWidget):
         view = self.slice_view.getView()
         view.setRange(xRange=(0, self.volume.shape[2]), yRange=(0, self.volume.shape[1]), padding=0)
 
-        h, w = self.volume.shape[1], self.volume.shape[2]
-        center_x, center_y = w // 2, h // 2
+        center_x, center_y = self.volume.shape[2]//2, self.volume.shape[1]//2  # (x_center, y_center)
         offset = 25
 
         self.line = LineSegmentROI(
@@ -57,7 +56,7 @@ class RealTimeCrossSectionViewer(QWidget):
             rotatable=True,
             resizable=True
         )
-        self.slice_view.getView().addItem(self.line)
+        self.slice_view.getView().addItem(self.line, ignoreBounds=True)
 
         self.cross_section_container = QWidget()
         cross_layout = QVBoxLayout(self.cross_section_container)
@@ -85,7 +84,6 @@ class RealTimeCrossSectionViewer(QWidget):
 
         self.cursor_label = QLabel("X: ---, Y: ---")
         cross_layout.addWidget(self.cursor_label)
-        self.cursor
 
         self.cursor_toggle_cb = QCheckBox("Show Cursor Lines on Cross-section")
         self.layout.addWidget(self.cursor_toggle_cb)
@@ -191,8 +189,8 @@ class RealTimeCrossSectionViewer(QWidget):
             n_samples = 300
             distance = np.hypot(end[0] - start[0], end[1] - start[1])
             physical_length = distance * pixel_size
-            x = np.linspace(start[0], end[0], n_samples)  # microns
-            y = np.linspace(start[1], end[1], n_samples)
+            x = np.linspace(start[1], end[1], n_samples)  # microns
+            y = np.linspace(start[0], end[0], n_samples)
             valid_mask = (x >= 0) & (x <= self.volume.shape[2] - 1) & \
                          (y >= 0) & (y <= self.volume.shape[1] - 1)
 
@@ -206,7 +204,7 @@ class RealTimeCrossSectionViewer(QWidget):
 
             profile = map_coordinates(
                 self.volume[self.current_slice],
-                np.vstack([x, y]),
+                np.vstack([y, x]),
                 order=1,
                 mode='constant',
                 cval=0.0
@@ -309,6 +307,7 @@ class RealTimeCrossSectionViewer(QWidget):
         self.volume = new_source
         self.current_slice = 0
         self.slice_view.setImage(self.volume[self.current_slice])
+        self.update_line()
         self.add_overlay_scale_bar(pixel_length=10)
 
     def add_overlay_scale_bar(self, pixel_length=100):
@@ -382,6 +381,35 @@ class RealTimeCrossSectionViewer(QWidget):
             f"<div style='color:orange; font-weight: bold; font-size: 8pt;'>{physical_length:.2f} {self.unit_distance}</div>"
         )
         self._overlay_label.setPos((x_start + x_end) / 2, y - 10)
+
+    def update_line(self):
+
+        was_visible = self.line.isVisible() if hasattr(self, "line") else False
+
+        if hasattr(self, "line") and self.line is not None:
+            self.slice_view.getView().removeItem(self.line)
+
+        # Get the new center
+        center_x, center_y = self.volume.shape[1]//2, self.volume.shape[2]//2  # (x_center, y_center)
+        offset = 25
+
+        # Create new line centered on centroid
+        self.line = LineSegmentROI(
+            positions=[[center_x - offset, center_y], [center_x + offset, center_y]],
+            pen=pg.mkPen('r', width=3),
+            movable=True,
+            rotatable=True,
+            resizable=True
+        )
+        self.slice_view.getView().addItem(self.line, ignoreBounds=True)
+        self.line.setVisible(was_visible)
+    
+        # Reconnect signal
+        self.line.sigRegionChanged.connect(self.update_cross_section)
+
+        # Only update cross-section if line is meant to be visible
+        if was_visible:
+            self.update_cross_section()
 
 if __name__ == "__main__":
 

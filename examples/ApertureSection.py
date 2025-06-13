@@ -49,7 +49,6 @@ class ApertureSection(QWidget):
         self.page_layout = QVBoxLayout(self)
         self.page_layout.addWidget(QLabel("Diffracting object"))
         self.page_layout.addWidget(self.graph_widget)
-
         self.setup_unit_widget()
         self.setup_simulation_distance()
         self.setup_aperture_shape()
@@ -62,7 +61,6 @@ class ApertureSection(QWidget):
         #Units definition
         self.unit_widget = QWidget()
         self.unit_widget_layout = QHBoxLayout(self.unit_widget)
-
         label = QLabel("Select the distance unit")
 
         self.unit_combo = QComboBox()
@@ -425,7 +423,9 @@ class ApertureSection(QWidget):
             self.aperture_size = tuple(map(str,new_size))
             return elliptical_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d, dx=dx)
 
+
         elif shape == "Square array":
+        
             matrix = tuple(map(int, params["array_matrix"]))
             spacing = int(params["array_spacing"])
             square_size = int(params["square_size"])
@@ -483,6 +483,8 @@ class ApertureSection(QWidget):
             width  = (Mw - 1) * spacing + aperture_size
 
             self.aperture_size = (str(height), str(width))
+
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

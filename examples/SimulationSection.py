@@ -10,7 +10,8 @@ from scipy.ndimage import map_coordinates
 import sys
 
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, near_field
+from diffraction_propagation import far_field, near_field, angular_spectrum
+from resizing_ import crop_to_signal
 
 
 class SimulationSection(QWidget):
@@ -108,10 +109,16 @@ class SimulationSection(QWidget):
             self.volume = far_field(U0, wavelength, z, dx)
             self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
         except:
-            self.volume = near_field(U0, wavelength, z, dx)
-        self.graph_widget.update_data(self.volume)
-        self.graph_widget.update_cross_section()
-        self.graph_widget.update_cursor_labels()
+            self.volume = angular_spectrum(U0, wavelength, z, dx)
+            self.graph_widget.sampling = dx
+        try: 
+            self.volume = crop_to_signal(self.volume)
+            self.graph_widget.update_data(self.volume)
+            self.graph_widget.update_cross_section()
+            self.graph_widget.update_cursor_labels()
+        except Exception as e:
+            print(f"Error : {e}")
+            
     
     def pixout(self, source, wavelength, z, dx):
         N = max(source.shape)

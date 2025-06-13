@@ -25,11 +25,18 @@ class DiffractionPropagator(QMainWindow):
         self.aperture_section = ApertureSection()
         self.simulation_section = SimulationSection()
 
+        self.graph_window_size = (300,300)
         # Layout with splitter
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.source_section)
         splitter.addWidget(self.aperture_section)
         splitter.addWidget(self.simulation_section)
+
+        self.source_section.setMinimumWidth(350)
+        self.aperture_section.setMinimumWidth(350)
+
+        # After adding all widgets, set sizes explicitly
+        splitter.setSizes([350, 350, 900])
 
         # Create a wrapper central widget with a layout
         central_widget = QWidget()
@@ -119,32 +126,32 @@ class DiffractionPropagator(QMainWindow):
         self.simulation_section.checkbox.stateChanged.connect(self.restore_auto_sampling)
 
     def run_simulation(self):
-        # 1. Get the aperture mask
-        aperture_params = self.aperture_section.get_inputs()
-        aperture = self.aperture_section.aperture
+        try:
+            # 1. Get the aperture mask
+            aperture_params = self.aperture_section.get_inputs()
+            aperture = self.aperture_section.aperture
 
+            # 2. Get the source distribution
+            source_params = self.source_section.get_inputs()
+            source = self.source_section.light_source
 
-        # 2. Get the source distribution
-        source_params = self.source_section.get_inputs()
-        source = self.source_section.light_source
-
-        # 3. Get wavelength, distance, pixel size
-        wavelength = float(source_params['wavelength'])
-        z = float(aperture_params["simulation_distance"])
-        assert self.source_section.sampling == self.aperture_section.sampling
-        dx = float(self.source_section.sampling)   
-
-        assert max(aperture.shape) == max(source.shape)
-        N_win =  max(aperture.shape)
-        N_target = int(self.simulation_section.resolution_multiplier) * N_win
-        if N_win < N_target :
-            new_shape = (N_target, N_target)
-            source = zero_pad(source, new_shape)
-            aperture = zero_pad(aperture, new_shape)
-
-        # 4. Update simulation
-        self.simulation_section.update_diffraction(source, aperture, wavelength, z, dx)
-
+            # 3. Get wavelength, distance, pixel size
+            wavelength = float(source_params['wavelength'])
+            z = float(aperture_params["simulation_distance"])
+            assert self.source_section.sampling == self.aperture_section.sampling
+            dx = float(self.source_section.sampling)   
+            assert max(aperture.shape) == max(source.shape)
+            N_win =  max(aperture.shape)
+            N_target = int(self.simulation_section.resolution_multiplier) * N_win
+            if N_win < N_target :
+                new_shape = (N_target, N_target)
+                source = zero_pad(source, new_shape)
+                aperture = zero_pad(aperture, new_shape)
+            # 4. Update simulation
+            self.simulation_section.update_diffraction(source, aperture, wavelength, z, dx)
+        except Exception as e:
+            print(f"Exception in run_simulation: {e}")
+    
     def update_sampling(self):
         aperture_params = self.aperture_section.get_inputs()
 
