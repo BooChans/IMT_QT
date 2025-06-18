@@ -42,3 +42,17 @@ def zero_pad(U0, new_shape):
 
     padded[0, start_y:start_y + old_h, start_x:start_x + old_w] = U0[0]
     return padded
+
+
+def auto_sampling_N_2(source_size, shape = (512,512), filling_rate = 1):
+    h_smax = max(source_size)
+    h, _ = shape
+    dx = h_smax/(h*filling_rate)
+
+    return dx
+
+def auto_sampling_dx_2(source_size, shape=(512,512), dx=1.0):
+    h_smax = max(source_size) 
+    N = int(2 ** (np.ceil(np.log2(h_smax/dx))))
+    return N
+
