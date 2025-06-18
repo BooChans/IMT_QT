@@ -6,10 +6,12 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 import sys
+import matplotlib.pyplot as plt
 
 from DiffractionSection import RealTimeCrossSectionViewer
 from apertures import elliptical_aperture, rectangular_aperture
 from automatic_sizing import auto_sampling_N_2, auto_sampling_dx_2
+from PIL import Image
 
 class ImageSection(QWidget):
     def __init__(self):
@@ -18,7 +20,7 @@ class ImageSection(QWidget):
 
         self.image_shape = "Elliptic"
         self.image_array_shape = ("512", "512")
-        self.image_size = ("512", "512") 
+        self.image_size = ("300", "300") 
         self.distance_unit = "µm"
         self.img_path = None
 
@@ -160,14 +162,71 @@ class ImageSection(QWidget):
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "All Files (*);;Text Files (*.txt)"
+            self, "Select File", "", "All Files (*);;(*.jpg);; (*.png);; (*.bmp);; (*.tiff)"
         )
         if file_path:
             self.img_file_line_edit.setText(file_path)
+            self.img_path = file_path
+            self.update_graph()
+        else: 
+            file_path = None
+            self.img_file_line_edit.setText("")
 
     def setup_connections(self):
         self.img_file_button.clicked.connect(self.browse_file)
 
+        self.combo.currentTextChanged.connect(self.update_graph)
+        self.unit_combo.currentTextChanged.connect(self.update_graph)
+
+        self.h_shape_line_edit.textChanged.connect(self.update_graph)
+        self.w_shape_line_edit.textChanged.connect(self.update_graph)
+        self.h_size_line_edit.textChanged.connect(self.update_graph)
+        self.w_size_line_edit.textChanged.connect(self.update_graph)
+
+
+    def get_inputs(self):
+        self.image_shape = self.combo.currentText()
+        self.image_array_shape = (self.h_shape_line_edit.text(), self.w_shape_line_edit.text())
+        self.image_size = (self.h_size_line_edit.text(), self.w_size_line_edit.text())
+        self.distance_unit = self.unit_combo.currentText()
+        self.graph_widget.sampling = self.sampling
+
+        return {
+            "image_shape" : self.image_shape,
+            "image_array_shape" : self.image_array_shape,
+            "image_shape_size" : self.image_size,
+            "distance_unit" : self.distance_unit,
+            "sampling" : self.sampling, 
+            "img_path" : self.img_path
+        }
+
+    def generate_image(self):
+        image_params = self.get_inputs()
+        print(image_params)
+        image_shape_size = tuple(map(int, image_params['image_shape_size']))
+        image_array_shape = tuple(map(int, image_params['image_array_shape']))
+        image_shape = image_params['image_shape']
+        dx = image_params['sampling']
+
+        if image_shape == "Elliptic":
+            return elliptical_aperture(shape = image_array_shape, size = image_shape_size, dx=dx)
+        if image_shape == "Rectangular":
+            return rectangular_aperture(shape = image_array_shape, size= image_shape_size, dx = dx)
+        if image_shape == "Image":
+            return self.open_image()
+
+    def update_graph(self):
+        image = self.generate_image()
+        self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
+        self.graph_widget.update_data(self.image)
+
+    def open_image(self):
+        img = Image.open(self.img_path).convert("L")
+        image_array_shape = tuple(map(int, self.image_array_shape))
+        img = img.resize(image_array_shape)
+        img = np.array(img)
+        print(img.shape)
+        return img
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
