@@ -21,7 +21,7 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
     """
     Ifta : Iterative Fourier Transform Algorithm
     
-    Author : Francois Leroux
+    Author : Francois Leroux, mod. Bao Chau Tran
     Contact : francois.leroux.pro@gmail.com
     Status : in progress
     Last update : 2024.03.01, Brest
@@ -43,6 +43,7 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
                         
     Outputs : a binary cross
     """
+
     
     if compute_efficiency:
         efficiency = np.zeros(n_iter)             # memory allocation
@@ -70,14 +71,23 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
         image_phase = 2*np.pi*np.random.rand(image_size[0], image_size[1]) # Random image phase
     else:
         image_phase = seed
-                                               
+
+    cont = 0
+    h,w = image_phase.shape
+    shape = (2*n_levels+1, h, w)
+    holo_phase_fields = np.zeros(shape)
+    holo_phase_fields[cont] = image_phase   
+
+
+
     image_field = image_amp*np.exp(1j * image_phase)      # Initiate input field
     
     # First loop - continous phase screen computation
-    
     for k in range(n_iter):
+        cont+=1
         holo_field = np.fft.ifft2(np.fft.ifftshift(image_field))  # field ifta = TF-1 field image
         holo_phase = np.angle(holo_field)                         # save ifta phase
+        holo_phase_fields[cont] = holo_phase                      # save holo phase from each iteration
         holo_field = np.exp(holo_phase * 1j)                      # force the module of holo_field to 1 (no losses)
         image_field = np.fft.fftshift(np.fft.fft2(holo_field))    # field image = TF field ifta
         image_phase = np.angle(image_field)                       # save image phase
@@ -101,9 +111,11 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
     if n_levels != 0:
 
         for k in range(n_iter):
+            cont += 1
             holo_field = np.fft.ifft2(np.fft.ifftshift(image_field))  # field ifta = TF-1 field image
             holo_phase = np.angle(holo_field)                         # get ifta phase. phase values between 0 and 2pi 
             holo_phase = Discretization(holo_phase, n_levels)         # phase Discretization
+            holo_phase_fields[cont] = holo_phase                     # save holo phase from each iteration
             holo_field = np.exp(holo_phase * 1j)                      # force the amplitude of the ifta to 1 (no losses)
             image_field = np.fft.fftshift(np.fft.fft2(holo_field))    # image = TF du ifta
             image_phase = np.angle(image_field)                       # save image phase
@@ -121,15 +133,15 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
                 uniformity[k] = ComputeUniformity(holo_phase, image_amp)
 
     if compute_efficiency and not(compute_uniformity):
-        return holo_phase, efficiency
+        return holo_phase_fields, efficiency
     
     if compute_uniformity and not(compute_efficiency):
-        return holo_phase, uniformity
+        return holo_phase_fields, uniformity
     
     if compute_efficiency and compute_uniformity:
-        return holo_phase, efficiency, uniformity
+        return holo_phase_fields, efficiency, uniformity
 
-    return holo_phase
+    return holo_phase_fields
 
 
 

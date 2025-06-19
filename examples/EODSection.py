@@ -18,6 +18,7 @@ class EODSection(QWidget):
 
         self.EOD_shape = ("512", "512") 
         self.sampling = "1.0"
+        self.nbiter = "25"
         self.rfact = "1.2"
         self.nlevels = "0"
         self.seed = 0
@@ -45,6 +46,7 @@ class EODSection(QWidget):
 
         self.setup_rfact()
         self.setup_nlevels()
+        self.setup_nbiter()
         self.setup_npy_importer()
         self.setup_extras()
         self.setup_simulation()
@@ -84,6 +86,24 @@ class EODSection(QWidget):
         self.nlevels_widget_layout.addWidget(self.nlevels_line_edit)
 
         self.page_layout.addWidget(self.nlevels_widget)
+
+    def setup_nbiter(self):
+
+        self.nbiter_widget = QWidget()
+        self.nbiter_widget_layout = QHBoxLayout(self.nbiter_widget)
+
+        nbiter_label = QLabel("Number of iterations")
+
+        self.nbiter_line_edit = QLineEdit()
+        self.nbiter_line_edit.setFixedWidth(100)
+        self.nbiter_line_edit.setText(self.nbiter)
+
+        self.nbiter_widget_layout.addWidget(nbiter_label)
+        self.nbiter_widget_layout.addStretch()
+        self.nbiter_widget_layout.addWidget(self.nbiter_line_edit)
+
+        self.page_layout.addWidget(self.nbiter_widget)
+
 
     def setup_extras(self):
 
@@ -254,11 +274,10 @@ class EODSection(QWidget):
         self.simulation_distance = self.dst_sim_line_edit.text()
         self.sampling = self.sampling_line_edit.text()
         self.wavelength = self.wavelength_line_edit.text()
-
+        self.nbiter = self.nbiter_line_edit.text()
+        
         self.compute_efficiency = 1 if self.efficiency_checkbox.isChecked() else 0
         self.compute_uniformity = 1 if self.uniformity_checkbox.isChecked() else 0
-
-        print(self.get_inputs())
 
 
     
@@ -267,13 +286,15 @@ class EODSection(QWidget):
             "EOD_shape" : self.EOD_shape, 
             "rfact" : self.rfact,
             "nlevels" : self.nlevels, 
+            "nbiter" : self.nbiter,
             "distance_unit" : self.distance_unit,
             "wavelength" : self.wavelength,
             "simulation_distance" : self.simulation_distance,
             "sampling" : self.sampling,
             "compute_efficiency" : self.compute_efficiency, 
             "compute_uniformity" : self.compute_uniformity,
-            "npy_path" : self.npy_path
+            "npy_path" : self.npy_path, 
+            "volume" : self.volume
         }
 
     def setup_connections(self):
@@ -290,6 +311,7 @@ class EODSection(QWidget):
         self.uniformity_checkbox.stateChanged.connect(self.sync_inputs)
         self.wavelength_line_edit.textChanged.connect(self.sync_inputs)
         self.unit_combo.currentTextChanged.connect(self.sync_inputs)
+        self.nbiter_line_edit.textChanged.connect(self.sync_inputs)
 
 
 if __name__ == "__main__":

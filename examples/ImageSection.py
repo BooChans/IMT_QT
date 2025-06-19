@@ -199,7 +199,8 @@ class ImageSection(QWidget):
             "image_shape_size" : self.image_size,
             "distance_unit" : self.distance_unit,
             "sampling" : self.sampling, 
-            "img_path" : self.img_path
+            "img_path" : self.img_path,
+            "image" : self.image
         }
 
     def generate_image(self):
