@@ -47,14 +47,17 @@ def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1.0):
         2D np.array: Binary image with 1s inside the rectangle, 0s outside.
     """
     # Create a SQUARE aperture (instead of circular)
+    eps = 1e-9
     h, w = shape
     hr, wr = size
-    assert hr / dx < h, "Sampling value is too low"
-    assert wr / dx < w, "Sampling value is too low"
+    print(hr, wr, dx, h, hr/dx)
+    assert hr / dx <= h, "Sampling value is too low"
+    assert wr / dx <= w, "Sampling value is too low"
     x = np.arange(-w//2, w//2) * dx
     y = np.arange(-h//2, h//2) * dx
     X, Y = np.meshgrid(x, y)
     aperture = ((np.abs(X) <= wr/2) & (np.abs(Y) <= hr/2)).astype(np.float64)  # Square mask
+    print(np.max(aperture))
     return aperture
 
 

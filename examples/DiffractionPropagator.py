@@ -32,8 +32,8 @@ class DiffractionPropagator(QMainWindow):
         splitter.addWidget(self.aperture_section)
         splitter.addWidget(self.simulation_section)
 
-        self.source_section.setMinimumWidth(350)
-        self.aperture_section.setMinimumWidth(350)
+        self.source_section.setMinimumWidth(400)
+        self.aperture_section.setMinimumWidth(400)
 
         # After adding all widgets, set sizes explicitly
         splitter.setSizes([350, 350, 900])

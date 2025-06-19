@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from DiffractionSection import RealTimeCrossSectionViewer
 from apertures import elliptical_aperture, rectangular_aperture
-from automatic_sizing import auto_sampling_N_2, auto_sampling_dx_2
+from automatic_sizing import auto_sampling_N_2, auto_sampling_dx_2, zero_pad
 from PIL import Image
 
 class ImageSection(QWidget):
@@ -156,7 +156,7 @@ class ImageSection(QWidget):
         self.img_import_widget_layout.addStretch()
         self.img_import_widget_layout.addWidget(self.img_file_line_edit)
         self.img_import_widget_layout.addWidget(self.img_file_button)
-
+        self.img_import_widget.hide()
         self.page_layout.addWidget(self.img_import_widget)
     
 
@@ -176,12 +176,14 @@ class ImageSection(QWidget):
         self.img_file_button.clicked.connect(self.browse_file)
 
         self.combo.currentTextChanged.connect(self.update_graph)
+        self.combo.currentTextChanged.connect(self.update_gui_combo)
         self.unit_combo.currentTextChanged.connect(self.update_graph)
 
         self.h_shape_line_edit.textChanged.connect(self.update_graph)
         self.w_shape_line_edit.textChanged.connect(self.update_graph)
         self.h_size_line_edit.textChanged.connect(self.update_graph)
         self.w_size_line_edit.textChanged.connect(self.update_graph)
+
 
 
     def get_inputs(self):
@@ -206,8 +208,9 @@ class ImageSection(QWidget):
         image_shape_size = tuple(map(int, image_params['image_shape_size']))
         image_array_shape = tuple(map(int, image_params['image_array_shape']))
         image_shape = image_params['image_shape']
-        dx = image_params['sampling']
-
+        dx = auto_sampling_N_2(source_size=image_shape_size, shape= image_array_shape)
+        self.sampling = dx
+        self.graph_widget.sampling = dx
         if image_shape == "Elliptic":
             return elliptical_aperture(shape = image_array_shape, size = image_shape_size, dx=dx)
         if image_shape == "Rectangular":
@@ -219,18 +222,27 @@ class ImageSection(QWidget):
         image = self.generate_image()
         self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
         self.graph_widget.update_data(self.image)
-
     def open_image(self):
         img = Image.open(self.img_path).convert("L")
         image_array_shape = tuple(map(int, self.image_array_shape))
-        img = img.resize(image_array_shape)
+        img.thumbnail(image_array_shape,Image.LANCZOS)
         img = np.array(img)
+        img = img/img.max()
+        img = zero_pad(np.array([img]), image_array_shape).squeeze()
         print(img.shape)
         return img
 
+    def update_gui_combo(self, text):
+        self.img_import_widget.hide()
+        self.shape_dimensions_widget.hide()
+        
+        if text == "Image":
+            self.img_import_widget.show()
+        else: 
+            self.shape_dimensions_widget.show()
+        
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-
     section = ImageSection()
     section.show()
 
