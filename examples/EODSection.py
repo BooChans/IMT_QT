@@ -29,6 +29,7 @@ class EODSection(QWidget):
         self.simulation_distance = "1e6"
         self.wavelength = "0.633"
         self.sampling = "1.0"
+        self.tile = "1"
 
         self.efficiency = None 
         self.uniformity = None 
@@ -246,6 +247,7 @@ class EODSection(QWidget):
         self.setup_simulation_distance()
         self.setup_wavelength()
         self.setup_sampling()
+        self.setup_tile()
 
         self.launch_sim_button = QPushButton("Run propagation simulation with EOD")
         self.sim_widget_layout.addWidget(self.launch_sim_button)
@@ -256,7 +258,9 @@ class EODSection(QWidget):
         try:
             print("in the try of the sim") 
             U0 = np.exp(-1j*self.volume[-1])
-            U0 = np.tile(U0, (4,4))
+            tile = int(self.tile)
+            tile_shape = (tile, tile)
+            U0 = np.tile(U0, tile_shape)
             z = float(self.simulation_distance)
             dx = float(self.sampling)
             wavelength = float(self.wavelength)
@@ -291,8 +295,11 @@ class EODSection(QWidget):
         self.distance_unit = self.unit_combo.currentText()
         self.simulation_distance = self.dst_sim_line_edit.text()
         self.sampling = self.sampling_line_edit.text()
+        self.graph_view.sampling = float(self.sampling)
+        self.graph_view.update_data(self.volume)
         self.wavelength = self.wavelength_line_edit.text()
         self.nbiter = self.nbiter_line_edit.text()
+        self.tile = self.tile_combo.currentText()
         
         self.compute_efficiency = 1 if self.efficiency_checkbox.isChecked() else 0
         self.compute_uniformity = 1 if self.uniformity_checkbox.isChecked() else 0
@@ -312,8 +319,25 @@ class EODSection(QWidget):
             "compute_efficiency" : self.compute_efficiency, 
             "compute_uniformity" : self.compute_uniformity,
             "npy_path" : self.npy_path, 
-            "volume" : self.volume
+            "volume" : self.volume,
+            "tile" :  self.tile
         }
+
+    def setup_tile(self):
+        self.tile_widget = QWidget()
+        self.tile_widget_layout = QHBoxLayout(self.tile_widget)
+
+        tile_label = QLabel("Select tiling")
+
+        self.tile_combo = QComboBox()
+        self.tile_combo.addItems(["1", "2", "4", "8"])
+        self.tile_combo.setCurrentText(self.tile)
+
+        self.tile_widget_layout.addWidget(tile_label)
+        self.tile_widget_layout.addStretch()
+        self.tile_widget_layout.addWidget(self.tile_combo)
+
+        self.sim_widget_layout.addWidget(self.tile_widget)
 
     def setup_connections(self):
         self.npy_file_button.clicked.connect(self.browse_file)
@@ -330,11 +354,15 @@ class EODSection(QWidget):
         self.wavelength_line_edit.textChanged.connect(self.sync_inputs)
         self.unit_combo.currentTextChanged.connect(self.sync_inputs)
         self.nbiter_line_edit.textChanged.connect(self.sync_inputs)
+        self.tile_combo.currentTextChanged.connect(self.sync_inputs)
+
 
     def pixout(self, source, wavelength, z, dx):
         N = max(source.shape)
         pixout_ = wavelength * abs(z) / (N * dx)
         return pixout_
+    
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

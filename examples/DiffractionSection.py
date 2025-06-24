@@ -72,7 +72,7 @@ class RealTimeCrossSectionViewer(QWidget):
 
 
 
-        self.toggle_line_cb = QCheckBox("Show Line ROI & Cross-section")
+        self.toggle_line_cb = QCheckBox("Line Profile")
         self.layout.addWidget(self.toggle_line_cb)
         self.toggle_line_cb.setChecked(False)
         self.toggle_line_cb.stateChanged.connect(self.toggle_line_roi)
@@ -134,12 +134,11 @@ class RealTimeCrossSectionViewer(QWidget):
         self.line.setVisible(self.toggle_line_cb_original_state)
         self.cross_section_container.setVisible(self.toggle_line_cb_original_state)
         
-        self.cursor_toggle_cb.setEnabled(self.toggle_line_cb_original_state)
+        self.cursor_toggle_cb.hide()
         self.cursor_toggle_cb.setChecked(False) 
         self.cursor_widget.setVisible(False)
 
-
-        self.cursor_lines_toggle_cb.setEnabled(self.toggle_line_cb_original_state) 
+        self.cursor_lines_toggle_cb.hide()
         self.cursor_lines_toggle_cb.setChecked(False) 
         self.cursor_label.setVisible(False)
 
@@ -173,16 +172,16 @@ class RealTimeCrossSectionViewer(QWidget):
         if not enabled:
             self.prev_cursor_toggle_state = self.cursor_toggle_cb.isChecked()
             self.prev_cursor_lines_toggle_state = self.cursor_lines_toggle_cb.isChecked()
-            self.cursor_toggle_cb.setChecked(False)
-            self.cursor_lines_toggle_cb.setChecked(False)
-            self.cursor_toggle_cb.setEnabled(False)
-            self.cursor_lines_toggle_cb.setEnabled(False)
+            self.cursor_toggle_cb.hide()
+            self.cursor_lines_toggle_cb.hide()
         else:
             # Re-enable and restore previous checked states
             self.cursor_toggle_cb.setEnabled(True)
             self.cursor_lines_toggle_cb.setEnabled(True)
             self.cursor_toggle_cb.setChecked(self.prev_cursor_toggle_state)
             self.cursor_lines_toggle_cb.setChecked(self.prev_cursor_lines_toggle_state)
+            self.cursor_toggle_cb.show()
+            self.cursor_lines_toggle_cb.show()
             self.update_cross_section()  # Restore data
     def update_cross_section(self):
         try:
@@ -419,12 +418,10 @@ class RealTimeCrossSectionViewer(QWidget):
     def slider_visibility(self):
 
         if self.volume.shape[0] == 1:
-            self.slice_view.timeLine.setVisible(False)
+            self.slice_view.ui.roiPlot.hide()
 
         else:
-            self.slice_view.timeLine.setVisible(True)
-
-
+            self.slice_view.ui.roiPlot.show()
 
 if __name__ == "__main__":
 

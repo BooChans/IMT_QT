@@ -18,14 +18,14 @@ class SourceSection(QWidget):
         super().__init__()
         self.source_type = "Plane Wave"
         self.wavelength = "0.633"
-        self.beam_shape = "Elliptic"
+        self.beam_shape = "Rectangular"
         self.size = ("300","300")
         self.distance_unit = "µm"
         self.waist = "300"
         self.sampling = "1.0" #µm*
         self.array_shape = ("512","512")
 
-        self.light_source = plane_wave_elliptical(size=tuple(map(int, self.size)))
+        self.light_source = plane_wave_rectangular(size=tuple(map(int, self.size)))
         self.light_source = np.repeat(self.light_source[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.light_source)
 
@@ -110,7 +110,7 @@ class SourceSection(QWidget):
         self.option_e = QRadioButton("Elliptic")
         self.option_r = QRadioButton("Rectangular")
         
-        self.option_e.setChecked(True)  
+        self.option_r.setChecked(True)  
 
         self.plane_wave_shape_layout.addWidget(shape_label)
         self.plane_wave_shape_layout.addStretch()

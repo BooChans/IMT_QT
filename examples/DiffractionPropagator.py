@@ -24,6 +24,13 @@ class DiffractionPropagator(QMainWindow):
         self.source_section = SourceSection()
         self.aperture_section = ApertureSection()
         self.simulation_section = SimulationSection()
+        
+        #hide histograms & RoIPlot
+        self.source_section.graph_widget.slice_view.ui.histogram.hide()
+        self.aperture_section.graph_widget.slice_view.ui.histogram.hide()
+        self.source_section.graph_widget.slice_view.ui.roiPlot.hide()
+        self.aperture_section.graph_widget.slice_view.ui.roiPlot.hide()
+
 
         self.graph_window_size = (300,300)
         # Layout with splitter

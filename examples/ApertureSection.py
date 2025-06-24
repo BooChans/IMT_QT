@@ -100,7 +100,7 @@ class ApertureSection(QWidget):
         self.shape_widget = QWidget()
         self.shape_widget_layout = QHBoxLayout(self.shape_widget)
         self.shape_combo = QComboBox()
-        self.shape_combo.addItems(["Elliptic", "Rectangular", "Slit", "Elliptic array", "Square array"])
+        self.shape_combo.addItems(["Elliptic", "Rectangular", "Slit", "Array of ellipses", "Array of rectangles"])
         self.shape_combo.setCurrentText(self.aperture_shape)
 
         self.shape_widget_layout.addWidget(shape_label)
@@ -323,11 +323,11 @@ class ApertureSection(QWidget):
             self.simple_aperture_widget.show()
         elif text == "Slit":
             self.slit_aperture_widget.show()
-        elif text == "Elliptic array":
+        elif text == "Array of ellipses":
             self.array_aperture_widget.show()
             self.hel_bd_widget.show()
             self.hel_sd_widget.show()
-        elif text == "Square array":
+        elif text == "Array of rectangles":
             self.array_aperture_widget.show()
             self.squ_array_widget.show()
         self.update_aperture_graph()
@@ -349,10 +349,10 @@ class ApertureSection(QWidget):
         if self.aperture_shape == "Slit":
             self.slit_width = self.slit_width_line_edit.text()
             self.slit_distance = self.slit_distance_line_edit.text()
-        elif self.aperture_shape == "Elliptic array":
+        elif self.aperture_shape == "Array of ellipses":
             self.big_diameter = self.hel_bd_line_edit.text()
             self.small_diameter = self.hel_sd_line_edit.text()
-        elif self.aperture_shape == "Square array":
+        elif self.aperture_shape == "Array of rectangles":
             self.square_size = self.squ_square_size_line_edit.text()
         
         # Array parameters (common for both array types)
@@ -366,9 +366,9 @@ class ApertureSection(QWidget):
             Mw = int(self.matrix_w_line_edit.text())
             spacing = float(self.matrix_spacing_line_edit.text())
 
-            if self.aperture_shape == "Square array":
+            if self.aperture_shape == "Array of rectangles":
                 aperture_size = float(self.squ_square_size_line_edit.text())
-            elif self.aperture_shape == "Elliptic array":
+            elif self.aperture_shape == "Array of ellipses":
                 aperture_size = float(self.hel_bd_line_edit.text())
             else:
                 aperture_size = 0  # fallback if needed
@@ -413,7 +413,7 @@ class ApertureSection(QWidget):
             assert max(size) < max((dx*array_shape[0], dx*array_shape[1]))
             return slit_apeture(shape=array_shape,size=size, d=distance, W=width, dx=dx)
 
-        elif shape == "Elliptic array":
+        elif shape == "Array of ellipses":
             matrix = tuple(map(int, params["array_matrix"]))
             spacing = int(params["array_spacing"])
             big_d = int(params["big_diameter"])
@@ -424,7 +424,7 @@ class ApertureSection(QWidget):
             return elliptical_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d, dx=dx)
 
 
-        elif shape == "Square array":
+        elif shape == "Array of rectangles":
         
             matrix = tuple(map(int, params["array_matrix"]))
             spacing = int(params["array_spacing"])
@@ -453,12 +453,12 @@ class ApertureSection(QWidget):
             self.aperture_size = (self.slit_size_h_line_edit.text(), self.slit_size_w_line_edit.text())
             self.slit_width = self.slit_width_line_edit.text()
             self.slit_distance = self.slit_distance_line_edit.text()
-        elif self.aperture_shape == "Elliptic array":
+        elif self.aperture_shape == "Array of ellipses":
             self.array_matrix = (self.matrix_h_line_edit.text(), self.matrix_w_line_edit.text())
             self.array_spacing = self.matrix_spacing_line_edit.text()
             self.big_diameter = self.hel_bd_line_edit.text()
             self.small_diameter = self.hel_sd_line_edit.text()
-        elif self.aperture_shape == "Square array":
+        elif self.aperture_shape == "Array of rectangles":
             self.array_matrix = (self.matrix_h_line_edit.text(), self.matrix_w_line_edit.text())
             self.array_spacing = self.matrix_spacing_line_edit.text()
             self.square_size = self.squ_square_size_line_edit.text()
@@ -472,9 +472,9 @@ class ApertureSection(QWidget):
             Mw = int(self.matrix_w_line_edit.text())
             spacing = float(self.matrix_spacing_line_edit.text())
 
-            if self.aperture_shape == "Square array":
+            if self.aperture_shape == "Array of rectangles":
                 aperture_size = float(self.squ_square_size_line_edit.text())
-            elif self.aperture_shape == "Elliptic array":
+            elif self.aperture_shape == "Array of ellipses":
                 aperture_size = float(self.hel_bd_line_edit.text())
             else:
                 aperture_size = 0  # fallback if needed
