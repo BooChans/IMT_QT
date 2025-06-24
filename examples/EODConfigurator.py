@@ -23,6 +23,8 @@ class EODConfigurator(QMainWindow):
         splitter.addWidget(self.image_section)
         splitter.addWidget(self.eod_section)
 
+        splitter.setSizes([200, 800])
+
         self.central_widget = QWidget()
         self.central_widget_layout = QVBoxLayout(self.central_widget)
 

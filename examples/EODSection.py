@@ -41,8 +41,11 @@ class EODSection(QWidget):
         self.setup_ui()
 
     def setup_ui(self):
-        self.page_layout = QVBoxLayout(self)
-        self.page_layout.addWidget(self.graph_view)
+
+        splitter = QSplitter(Qt.Horizontal)
+
+        self.left = QWidget()
+        self.page_layout = QVBoxLayout(self.left)
 
         self.setup_rfact()
         self.setup_nlevels()
@@ -52,6 +55,14 @@ class EODSection(QWidget):
         self.setup_simulation()
         self.setup_eod_propagation_widget()
         self.setup_connections()
+
+        splitter.addWidget(self.left)
+        splitter.addWidget(self.graph_view)
+
+        splitter.setSizes([200, 800])
+
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.addWidget(splitter)        
 
     def setup_rfact(self):
 
@@ -245,19 +256,23 @@ class EODSection(QWidget):
         try:
             print("in the try of the sim") 
             U0 = np.exp(-1j*self.volume[-1])
+            U0 = np.tile(U0, (4,4))
             z = float(self.simulation_distance)
             dx = float(self.sampling)
             wavelength = float(self.wavelength)
             try:
                 volume = far_field(U0, z, dx, wavelength)
-                self.sampling = self.pixout(U0, wavelength, z, dx)
+                sampling = self.pixout(U0, wavelength, z, dx)
             except:
                 volume = angular_spectrum(U0, z, dx, wavelength)
-                self.sampling = dx
+                sampling = dx
+            self.graph_view.sampling = float(self.sampling)
+            print(self.sampling, "sampling")
             print(volume.shape)
             if len(volume.shape) != 3:
                 volume = np.repeat(volume[np.newaxis, :, :], 1, 0)
             self.result_window = RealTimeCrossSectionViewer(volume)
+            self.result_window.sampling = sampling
             self.result_window.setWindowTitle("EOD Propagation")
             self.result_window.show()
         except Exception as e:
