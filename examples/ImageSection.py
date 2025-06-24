@@ -205,7 +205,6 @@ class ImageSection(QWidget):
 
     def generate_image(self):
         image_params = self.get_inputs()
-        print(image_params)
         image_shape_size = tuple(map(int, image_params['image_shape_size']))
         image_array_shape = tuple(map(int, image_params['image_array_shape']))
         image_shape = image_params['image_shape']
@@ -230,7 +229,6 @@ class ImageSection(QWidget):
         img = np.array(img)
         img = img/img.max()
         img = zero_pad(np.array([img]), image_array_shape).squeeze()
-        print(img.shape)
         return img
 
     def update_gui_combo(self, text):

@@ -242,15 +242,18 @@ class EODSection(QWidget):
         self.sim_widget.hide()
 
     def run_eod_propagation(self):
-        try: 
-            U0 = self.volume[-1]
+        try:
+            print("in the try of the sim") 
+            U0 = np.exp(-1j*self.volume[-1])
             z = float(self.simulation_distance)
             dx = float(self.sampling)
             wavelength = float(self.wavelength)
             try:
                 volume = far_field(U0, z, dx, wavelength)
+                self.sampling = self.pixout(U0, wavelength, z, dx)
             except:
                 volume = angular_spectrum(U0, z, dx, wavelength)
+                self.sampling = dx
             print(volume.shape)
             if len(volume.shape) != 3:
                 volume = np.repeat(volume[np.newaxis, :, :], 1, 0)
@@ -313,6 +316,10 @@ class EODSection(QWidget):
         self.unit_combo.currentTextChanged.connect(self.sync_inputs)
         self.nbiter_line_edit.textChanged.connect(self.sync_inputs)
 
+    def pixout(self, source, wavelength, z, dx):
+        N = max(source.shape)
+        pixout_ = wavelength * abs(z) / (N * dx)
+        return pixout_
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

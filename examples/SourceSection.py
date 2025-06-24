@@ -29,6 +29,7 @@ class SourceSection(QWidget):
         self.light_source = np.repeat(self.light_source[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.light_source)
 
+
         self.setup_ui()
         self.setup_connections()
 

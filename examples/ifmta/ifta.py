@@ -43,6 +43,8 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
                         
     Outputs : a binary cross
     """
+    if len(target.shape) == 3:
+        target = target.squeeze()
 
     
     if compute_efficiency:
@@ -74,8 +76,12 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
 
     cont = 0
     h,w = image_phase.shape
-    shape = (2*n_levels+1, h, w)
+    if n_levels != 0:
+        shape = (2*n_iter+1, h, w)
+    else:
+        shape = (n_iter + 1, h, w)
     holo_phase_fields = np.zeros(shape)
+    print(holo_phase_fields.shape)
     holo_phase_fields[cont] = image_phase   
 
 

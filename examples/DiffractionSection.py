@@ -41,7 +41,8 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slider.setMaximum(1000)
         self.slider.setValue(0)
 
-        self.slice_view.setImage(self.volume[self.current_slice])
+        self.slice_view.setImage(self.volume, xvals=np.arange(self.volume.shape[0]))
+        self.slider_visibility()
         self.splitter.addWidget(self.slice_view)
         view = self.slice_view.getView()
         view.setRange(xRange=(0, self.volume.shape[2]), yRange=(0, self.volume.shape[1]), padding=0)
@@ -68,6 +69,7 @@ class RealTimeCrossSectionViewer(QWidget):
 
         self.layout.addWidget(QLabel("Zoom:"))
         self.layout.addWidget(self.slider) #Zoom Slider
+
 
 
         self.toggle_line_cb = QCheckBox("Show Line ROI & Cross-section")
@@ -156,6 +158,8 @@ class RealTimeCrossSectionViewer(QWidget):
         self.cursor_line2.sigPositionChanged.connect(self.update_cursor_labels)
         self.update_cursor_labels()
         self.cursor_lines_toggle_cb.toggled.connect(self.update_cursor_visibility)
+
+
 
 
 
@@ -306,7 +310,8 @@ class RealTimeCrossSectionViewer(QWidget):
     def update_data(self, new_source):
         self.volume = new_source
         self.current_slice = 0
-        self.slice_view.setImage(self.volume[self.current_slice])
+        self.slice_view.setImage(self.volume, xvals=np.arange(self.volume.shape[0]))
+        self.slider_visibility()
         self.update_line()
         self.add_overlay_scale_bar(pixel_length=10)
 
@@ -410,6 +415,16 @@ class RealTimeCrossSectionViewer(QWidget):
         # Only update cross-section if line is meant to be visible
         if was_visible:
             self.update_cross_section()
+
+    def slider_visibility(self):
+
+        if self.volume.shape[0] == 1:
+            self.slice_view.timeLine.setVisible(False)
+
+        else:
+            self.slice_view.timeLine.setVisible(True)
+
+
 
 if __name__ == "__main__":
 
