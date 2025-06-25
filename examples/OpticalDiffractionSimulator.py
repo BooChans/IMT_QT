@@ -16,7 +16,7 @@ from SourceSection import SourceSection
 from ApertureSection import ApertureSection
 from SimulationSection import SimulationSection
 
-class DiffractionPropagator(QMainWindow):
+class OpticalDiffractionSimulator(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -248,7 +248,7 @@ class DiffractionPropagator(QMainWindow):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-    window = DiffractionPropagator()
+    window = OpticalDiffractionSimulator()
     window.show()
     app.exec()
 
