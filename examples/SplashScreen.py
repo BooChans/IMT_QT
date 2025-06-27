@@ -12,7 +12,7 @@ class SplashScreen(QWidget):
     def __init__(self, WindowClass, img_path):
         super().__init__()
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
-        self.setFixedSize(800, 800)
+        self.setFixedSize(1200, 700)
         self.windowclass = WindowClass
         self.img_path = img_path
 
