@@ -1,17 +1,18 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout,
+    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout, QPushButton
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QIcon
 import pyqtgraph as pg
 from pyqtgraph import LineSegmentROI, InfiniteLine
 from scipy.ndimage import map_coordinates
 import sys
 
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, near_field, angular_spectrum
-from resizing_ import crop_to_signal
+from diffraction_propagation import far_field, near_field, angular_spectrum, sweep
+from resizing_ import crop_to_signal, format_if_large
 
 
 class SimulationSection(QWidget):
@@ -21,6 +22,9 @@ class SimulationSection(QWidget):
         self.sampling = "1.0" #user defined sampling for the aperture and the source
         self.volume = np.zeros((1, 512,512))
         self.resolution_multiplier = "1"
+        self.start_sweep = "1e2"
+        self.end_sweep = "1e4"
+        self.step_sweep = "100"
         self.graph_widget = RealTimeCrossSectionViewer(self.volume)
         self.setup_ui()
         self.setup_connections()
@@ -33,9 +37,9 @@ class SimulationSection(QWidget):
         self.resolution_widget = QWidget()
         self.resolution_widget_layout = QHBoxLayout(self.resolution_widget)
 
-        resolution_label = QLabel("Select output resolution")
+        resolution_label = QLabel("Over-sample output plane")
         self.combo_res = QComboBox()
-        self.combo_res.addItems(["1","2", "4", "8"])      
+        self.combo_res.addItems(["1","2", "4"])      
         self.combo_res.setCurrentText(self.resolution_multiplier)  
 
         self.resolution_widget_layout.addWidget(resolution_label)
@@ -46,6 +50,7 @@ class SimulationSection(QWidget):
         self.checkbox_widget = QWidget() #alignment
         self.checkbox_widget_layout = QHBoxLayout(self.checkbox_widget)
         self.checkbox = QCheckBox("Manual sampling")
+
         
         self.checkbox_widget_layout.addWidget(self.checkbox)
 
@@ -72,10 +77,88 @@ class SimulationSection(QWidget):
 
         self.widget_layout.addWidget(self.checkbox_widget)
         self.widget_layout.addWidget(self.sampling_selection_widget)
-    
+
+
+        self.algo_label = QLabel("")
+        self.widget_layout.addWidget(self.algo_label)
+
+        self.checkbox_sweep = QCheckBox("Z Sweep")
+        self.widget_layout.addWidget(self.checkbox_sweep)
+
+        self.sweep_widget = QWidget()
+        self.sweep_widget_layout = QHBoxLayout(self.sweep_widget)
+
+        self.sweep_widget_layout.addWidget(QLabel("start : end : step"))
+        self.sweep_widget_layout.addStretch()
+
+        self.start_sweep_line_edit = QLineEdit()
+        self.start_sweep_line_edit.setText(self.start_sweep)
+
+        self.end_sweep_line_edit = QLineEdit()
+        self.end_sweep_line_edit.setText(self.end_sweep)
+        
+        self.step_sweep_line_edit = QLineEdit()
+        self.step_sweep_line_edit.setText(self.step_sweep)
+
+        self.sweep_widget_layout.addWidget(self.start_sweep_line_edit)
+        self.sweep_widget_layout.addWidget(self.end_sweep_line_edit)
+        self.sweep_widget_layout.addWidget(self.step_sweep_line_edit)
+
+        
+
+        self.widget_layout.addWidget(self.sweep_widget)
+        self.sweep_widget.hide()
+
+        # Create button
+        self.go_button = QPushButton("Run Simulation")
+        self.go_button.setIcon(QIcon("icons/arrows.png"))
+        self.go_button.setIconSize(QSize(24, 24))
+
+        self.sweep_button = QPushButton("Sweep")
+        self.sweep_button.setIcon(QIcon("icons/game.png"))  # Change icon if needed
+        self.sweep_button.setIconSize(QSize(24, 24))
+
+        # Style it
+        button_style = """
+            QPushButton {{
+                font-size: 16px;
+                padding: 10px 20px;
+                border: 2px solid {color};
+                border-radius: 8px;
+                color: black;
+            }}
+            QPushButton:hover {{
+                background-color: {hover};
+            }}
+        """
+
+        self.go_button.setStyleSheet(button_style.format(color="green", hover="#eaffea"))
+        self.sweep_button.setStyleSheet(button_style.format(color="red", hover="#ffeaea"))
+
+
+        self.sweep_button.hide()
+        # Fix the button size (optional)
+        self.go_button.setFixedWidth(220)  # or whatever width looks good
+        self.sweep_button.setFixedWidth(220)  # or whatever width looks good
+
+
+        # Right-align the button using a layout
+        right_layout = QHBoxLayout()
+        right_layout.addWidget(self.go_button)
+        right_layout.addWidget(self.sweep_button)  # pushes the button to the left
+        right_layout.addStretch()
+        # Add this layout to your main layout
+        self.widget_layout.addLayout(right_layout)
+
     def setup_connections(self):
         self.checkbox.stateChanged.connect(self.update_sampling_input)
         self.combo_res.currentTextChanged.connect(self.update_resolution)
+        self.checkbox_sweep.stateChanged.connect(self.update_sweep_visibility)
+
+        self.start_sweep_line_edit.editingFinished.connect(self.update_sweep_params)
+        self.step_sweep_line_edit.editingFinished.connect(self.update_sweep_params)
+        self.end_sweep_line_edit.editingFinished.connect(self.update_sweep_params)
+
 
     def get_inputs(self):
         """
@@ -105,20 +188,38 @@ class SimulationSection(QWidget):
 
         assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
         U0 = source * aperture
+        z_limit = max(U0.shape) * dx**2 / wavelength
         try:
             self.volume = far_field(U0, wavelength, z, dx)
             self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
+            self.algo_label.setText(f"Far field algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
         except:
             self.volume = angular_spectrum(U0, wavelength, z, dx)
             self.graph_widget.sampling = dx
+            self.algo_label.setText(f"Near field algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
         try: 
-            self.volume = crop_to_signal(self.volume)
             self.graph_widget.update_data(self.volume)
             self.graph_widget.update_cross_section()
             self.graph_widget.update_cursor_labels()
         except Exception as e:
             print(f"Error : {e}")
-            
+
+    def update_sweep(self, source, aperture, wavelength, z, dx):
+        try:
+            assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
+            U0 = source * aperture
+            z_start = float(self.start_sweep)
+            z_step = float(self.step_sweep)
+            z_end = float(self.end_sweep)
+            self.volume, self.graph_widget.samplings = sweep(U0, wavelength, dx, z_start,z_end, z_step)
+        except Exception as e:
+            print(f"Update sweep error : {e}")
+        self.graph_widget.update_data(self.volume)
+        self.graph_widget.update_cross_section()
+        self.graph_widget.update_cursor_labels()
+        self.graph_widget.on_time_changed()
+
+         
     
     def pixout(self, source, wavelength, z, dx):
         N = max(source.shape)
@@ -140,3 +241,14 @@ class SimulationSection(QWidget):
 
     def update_resolution(self, text):
         self.resolution_multiplier = text
+
+    def update_sweep_visibility(self, checked):
+        self.sweep_widget.setVisible(checked)
+        self.sweep_button.setVisible(checked)
+
+    def update_sweep_params(self):
+        self.start_sweep = self.start_sweep_line_edit.text()
+        self.end_sweep = self.end_sweep_line_edit.text()
+        self.step_sweep = self.step_sweep_line_edit.text()
+
+        print(self.step_sweep, self.start_sweep, self.end_sweep)

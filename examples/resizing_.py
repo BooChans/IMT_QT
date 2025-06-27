@@ -13,7 +13,7 @@ def bounding_box(mask):
 def crop_to_signal(volume_slice, pad=10):
     # volume_slice shape: (1, N, N)
     intensity = np.abs(volume_slice[0]) ** 2  # remove batch dim for masking
-    threshold = 0.001 * intensity.max()
+    threshold = 0.00001 * intensity.max()
     mask = intensity > threshold
     bbox = bounding_box(mask)
     if bbox is None:
@@ -28,3 +28,9 @@ def crop_to_signal(volume_slice, pad=10):
     # crop including the batch dimension
     cropped = volume_slice[:, y_min:y_max, x_min:x_max]
     return cropped
+
+def format_if_large(value):
+    if abs(value) >= 100:
+        return f"{value:.2e}".replace("+0", "").replace("+", "")
+    else:
+        return str(round(value,2))

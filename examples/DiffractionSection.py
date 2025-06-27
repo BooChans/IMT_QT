@@ -1,13 +1,13 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem 
+    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem, QComboBox, QHBoxLayout
 )
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
 from pyqtgraph import LineSegmentROI, InfiniteLine, TextItem
 from scipy.ndimage import map_coordinates
-
+from resizing_ import format_if_large
 
 class RealTimeCrossSectionViewer(QWidget):
     """
@@ -19,6 +19,7 @@ class RealTimeCrossSectionViewer(QWidget):
         self.volume = volume_data
         self.current_slice = 0
         self.sampling = 1.0
+        self.samplings = None
         self.unit_distance = "µm"
         self.setup_ui()
         self.add_overlay_scale_bar(pixel_length=10)
@@ -33,6 +34,8 @@ class RealTimeCrossSectionViewer(QWidget):
         self.layout = QVBoxLayout(self)
         
         self.slice_view = pg.ImageView()
+        self.slice_view.sigTimeChanged.connect(self.on_time_changed)
+
         self.slice_view.ui.roiBtn.hide()
         self.slice_view.ui.menuBtn.hide()
 
@@ -60,22 +63,38 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slice_view.getView().addItem(self.line, ignoreBounds=True)
 
         self.cross_section_container = QWidget()
-        cross_layout = QVBoxLayout(self.cross_section_container)
+        cross_layout = QHBoxLayout(self.cross_section_container)
         self.cross_section_plot = pg.PlotWidget()
         cross_layout.addWidget(self.cross_section_plot)
+
 
         self.splitter.addWidget(self.cross_section_container)
         self.layout.addWidget(self.splitter)
 
+        self.window_info_widget = QLabel(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+        self.layout.addWidget(self.window_info_widget)
+
         self.layout.addWidget(QLabel("Zoom:"))
         self.layout.addWidget(self.slider) #Zoom Slider
-
 
 
         self.toggle_line_cb = QCheckBox("Line Profile")
         self.layout.addWidget(self.toggle_line_cb)
         self.toggle_line_cb.setChecked(False)
         self.toggle_line_cb.stateChanged.connect(self.toggle_line_roi)
+
+        self.display_widget = QWidget()
+        self.display_widget_layout = QHBoxLayout(self.display_widget)
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItems(["Amplitude", "Intensity", "Log-Amplitude", "Phase"])
+        self.mode_selector.currentIndexChanged.connect(self.update_display_mode)
+        self.mode_selector.currentIndexChanged.connect(self.on_time_changed)
+        self.display_widget_layout.addWidget(QLabel("Display Mode:"))
+        self.display_widget_layout.addStretch()
+        self.display_widget_layout.addWidget(self.mode_selector)
+
+        self.layout.addWidget(self.display_widget)
+
 
         self.vline = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g'))
         self.hline = pg.InfiniteLine(angle=0, movable=False, pen=pg.mkPen('g'))
@@ -185,6 +204,7 @@ class RealTimeCrossSectionViewer(QWidget):
             self.update_cross_section()  # Restore data
     def update_cross_section(self):
         try:
+            volume = self.apply_display_mode()
             pixel_size = self.sampling
             state = self.line.getState()
             start = state['points'][0] + state['pos']
@@ -194,19 +214,19 @@ class RealTimeCrossSectionViewer(QWidget):
             physical_length = distance * pixel_size
             x = np.linspace(start[1], end[1], n_samples)  # microns
             y = np.linspace(start[0], end[0], n_samples)
-            valid_mask = (x >= 0) & (x <= self.volume.shape[2] - 1) & \
-                         (y >= 0) & (y <= self.volume.shape[1] - 1)
+            valid_mask = (x >= 0) & (x <= volume.shape[2] - 1) & \
+                        (y >= 0) & (y <= volume.shape[1] - 1)
 
             x_safe = np.copy(x)
             y_safe = np.copy(y)
             x_safe[~valid_mask] = -1
             y_safe[~valid_mask] = -1
 
-            x = np.clip(x, 0, self.volume.shape[2] - 1)
-            y = np.clip(y, 0, self.volume.shape[1] - 1)
+            x = np.clip(x, 0, volume.shape[2] - 1)
+            y = np.clip(y, 0, volume.shape[1] - 1)
 
             profile = map_coordinates(
-                self.volume[self.current_slice],
+                volume[self.current_slice],
                 np.vstack([y, x]),
                 order=1,
                 mode='constant',
@@ -220,9 +240,48 @@ class RealTimeCrossSectionViewer(QWidget):
                 self.profile_curve = self.cross_section_plot.plot(x_physical,profile, pen='y')
             else:
                 self.profile_curve.setData(x_physical,profile)
-
         except Exception as e:
             print(f"Update error: {str(e)}")
+
+    def update_cross_section_slice(self, slice_data):
+            
+            volume = slice_data
+            pixel_size = self.sampling
+            state = self.line.getState()
+            start = state['points'][0] + state['pos']
+            end = state['points'][1] + state['pos']
+            n_samples = 300
+            distance = np.hypot(end[0] - start[0], end[1] - start[1])
+            physical_length = distance * pixel_size
+            x = np.linspace(start[1], end[1], n_samples)  # microns
+            y = np.linspace(start[0], end[0], n_samples)
+            valid_mask = (x >= 0) & (x <= volume.shape[2] - 1) & \
+                         (y >= 0) & (y <= volume.shape[1] - 1)
+
+            x_safe = np.copy(x)
+            y_safe = np.copy(y)
+            x_safe[~valid_mask] = -1
+            y_safe[~valid_mask] = -1
+
+            x = np.clip(x, 0, volume.shape[2] - 1)
+            y = np.clip(y, 0, volume.shape[1] - 1)
+
+            profile = map_coordinates(
+                slice_data[0],
+                np.vstack([y, x]),
+                order=1,
+                mode='constant',
+                cval=0.0
+            )
+
+            profile[~valid_mask] = 0
+
+            x_physical = np.linspace(0, physical_length, n_samples)
+            if not hasattr(self, 'profile_curve'):
+                self.profile_curve = self.cross_section_plot.plot(x_physical,profile, pen='y')
+            else:
+                self.profile_curve.setData(x_physical, profile)
+
 
     def update_zoom(self, slider_value):
         zoom_size = self.slider.maximum() - slider_value + self.slider.minimum()
@@ -308,11 +367,12 @@ class RealTimeCrossSectionViewer(QWidget):
             self.hline.hide()
     def update_data(self, new_source):
         self.volume = new_source
+        volume = self.apply_display_mode()
         self.current_slice = 0
-        self.slice_view.setImage(self.volume, xvals=np.arange(self.volume.shape[0]))
+        self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
         self.slider_visibility()
         self.update_line()
-        self.add_overlay_scale_bar(pixel_length=10)
+        self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
 
     def add_overlay_scale_bar(self, pixel_length=100):
         """
@@ -382,7 +442,7 @@ class RealTimeCrossSectionViewer(QWidget):
         # Update label text and position
         physical_length = clamped_length * self.sampling
         self._overlay_label.setHtml(
-            f"<div style='color:orange; font-weight: bold; font-size: 8pt;'>{physical_length:.2f} {self.unit_distance}</div>"
+            f"<div style='color:orange; font-weight: bold; font-size: 8pt;'>{format_if_large(physical_length)} {self.unit_distance}</div>"
         )
         self._overlay_label.setPos((x_start + x_end) / 2, y - 10)
 
@@ -422,6 +482,63 @@ class RealTimeCrossSectionViewer(QWidget):
 
         else:
             self.slice_view.ui.roiPlot.show()
+
+    def update_display_mode(self):
+        volume = self.apply_display_mode()
+        self.current_slice = 0
+        self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
+        self.slider_visibility()
+        self.update_line()
+        self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+
+    def apply_display_mode(self):
+        mode = self.mode_selector.currentText()
+        if mode == "Amplitude":
+            return np.abs(self.volume)
+        elif mode == "Intensity":
+            return np.abs(self.volume) ** 2
+        elif mode == "Log-Amplitude":
+            return np.log1p(np.abs(self.volume))  # log(1 + amplitude)
+        elif mode == "Phase":
+            return np.angle(self.volume)
+        else:
+            return np.abs(self.volume)
+        
+    def apply_display_mode_slice(self, slice):
+        mode = self.mode_selector.currentText()
+        if mode == "Amplitude":
+            return np.abs(slice)
+        elif mode == "Intensity":
+            return np.abs(slice) ** 2
+        elif mode == "Log-Amplitude":
+            return np.log1p(np.abs(slice))  # log(1 + amplitude)
+        elif mode == "Phase":
+            return np.angle(slice)
+        else:
+            return np.abs(slice)
+
+    def update_line_profile_zoom(self):
+        min_val = self.line_profile_zoom_slider_min.value()
+        max_val = self.line_profile_zoom_slider_max.value()
+
+        if min_val >= max_val:
+            return  # avoid invalid range
+
+        self.cross_section_plot.setYRange(min_val, max_val)
+
+    def on_time_changed(self):
+        if len(self.volume) > 1:
+            idx = int(self.slice_view.currentIndex)  # current slice index
+            slice_data = self.volume[idx][np.newaxis, :]
+            slice_data = self.apply_display_mode_slice(slice_data)
+            lower, upper = np.percentile(slice_data, [1, 100])
+            self.sampling = self.samplings[idx]
+            self.update_cross_section_slice(slice_data)
+            self.update_overlay_scale_bar_position()
+            self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+            self.slice_view.setLevels(lower, upper)
+
+
 
 if __name__ == "__main__":
 

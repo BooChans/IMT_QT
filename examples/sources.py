@@ -76,6 +76,17 @@ def gaussian_beam(shape=(512, 512), w0=50, dx=1.0):
 
     return intensity.astype(np.float64)
 
+def converging_spherical_wave(shape=(512, 512), wavelength = 0.633, focal_length = 1e4, dx = 1.0):
+    h, w = shape
+    x = (np.arange(w) - w // 2) * dx
+    y = (np.arange(h) - h // 2) * dx
+    X,Y = np.meshgrid(x,y)
+
+    source = np.exp( -1j * np.pi/(focal_length*wavelength)*(X**2 + Y**2))
+    source /= np.abs(source) + 1e-12
+    print(np.abs(source).min(), np.abs(source).max())
+    return source
+
 if __name__ == "__main__":
 
     app = QApplication([])

@@ -23,7 +23,7 @@ def far_field(U0, wavelength, z, dx):
     if abs(z) < z_limit:
         raise ValueError(f"Use near-field method for z < {z_limit:.2f} µm")
     pixout = wavelength * abs(z) / (N * dx)
-    print(z_limit, N, dx, wavelength, pixout)
+    #print(z_limit, N, dx, wavelength, pixout)
 
     
     # --- Step 1: Pre-FFT quadratic phase (α_in) ---
@@ -44,7 +44,7 @@ def far_field(U0, wavelength, z, dx):
     U2 = U1_fft * np.exp(1j * alpha_out * (FX**2 + FY**2))
     
     # Return intensity (multiplied by a coefficient to obtain more consistent intensity values)
-    return np.abs(U2)**2 * (dx**2 / pixout**2) / np.sum(np.abs(U0)**2)
+    return U2 * (dx / pixout) 
 
 def near_field(U0, wavelength, z, dx):
     """
@@ -83,7 +83,7 @@ def near_field(U0, wavelength, z, dx):
     Uz = np.fft.fftshift(Uz)
     
     # Return intensity
-    return np.abs(Uz)**2
+    return Uz
 
 def angular_spectrum(U0, wavelength, z, dx):
     """
@@ -107,6 +107,30 @@ def angular_spectrum(U0, wavelength, z, dx):
     Uz_fft = U0_fft * H
 
     Uz = np.fft.ifft2(Uz_fft)
-    Uz = np.abs(Uz)**2
 
     return Uz
+
+def sweep(U0, wavelength, dx, z_start, z_end, step):
+    N = max(U0.shape)
+    z_limit = N * dx**2 / wavelength
+    Z = np.arange(z_start, z_end, step)
+
+    h, w = U0.shape[1:3]
+    l = len(Z)
+
+    shape = (l,h,w)
+    diffraction_patterns = np.zeros(shape, dtype=np.complex128)
+    samplings = np.zeros((l))
+
+    for i in range(len(Z)): 
+        z = Z[i]
+        if abs(z) < z_limit:
+            diffraction_patterns[i] = angular_spectrum(U0, wavelength, z, dx)
+            samplings[i] = dx 
+        else:
+            diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
+            samplings[i] = wavelength * abs(z) / (N * dx)
+
+    return diffraction_patterns, samplings
+
+
