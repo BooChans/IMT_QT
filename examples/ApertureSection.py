@@ -40,6 +40,7 @@ class ApertureSection(QWidget):
         self.simulation_distance = "1e6" #µm
         self.sampling = "1.0" #µm
         self.img_path = None
+        self.img_attr = "Amplitude"
 
         self.aperture = elliptical_aperture(size = tuple(map(int, self.aperture_size)))
         self.aperture = np.repeat(self.aperture[np.newaxis, :, :], 1, axis=0)
@@ -303,6 +304,20 @@ class ApertureSection(QWidget):
         self.img_import_widget.hide()
         self.page_layout.addWidget(self.img_import_widget)
 
+        self.use_img_as_widget = QWidget()
+        self.use_img_as_widget_layout = QHBoxLayout(self.use_img_as_widget)
+        self.img_amp = QRadioButton("Amplitude")
+        self.img_pha = QRadioButton("Phase")
+
+        self.use_img_as_widget_layout.addWidget(QLabel("Use image as"))
+        self.use_img_as_widget_layout.addStretch()
+        self.use_img_as_widget_layout.addWidget(self.img_amp)
+        self.use_img_as_widget_layout.addWidget(self.img_pha)
+
+        self.img_amp.setChecked(True)
+
+        self.page_layout.addWidget(self.use_img_as_widget)
+
     def setup_connections(self):
         self.img_file_button.clicked.connect(self.browse_file)
         self.shape_combo.currentTextChanged.connect(self.update_aperture_shape_specifications)
@@ -328,7 +343,13 @@ class ApertureSection(QWidget):
 
         self.hel_bd_line_edit.textChanged.connect(self.update_aperture_graph)
         self.hel_sd_line_edit.textChanged.connect(self.update_aperture_graph)
-        self.squ_square_size_line_edit.textChanged.connect(self.update_aperture_graph)        
+        self.squ_square_size_line_edit.textChanged.connect(self.update_aperture_graph)     
+
+        self.img_amp.toggled.connect(self.use_image_as)
+        self.img_pha.toggled.connect(self.use_image_as)
+
+        self.img_amp.toggled.connect(self.update_aperture_graph)
+        self.img_pha.toggled.connect(self.update_aperture_graph)   
 
     def update_aperture_shape_specifications(self, text):
         
@@ -340,7 +361,8 @@ class ApertureSection(QWidget):
         self.hel_sd_widget.hide()
         self.squ_array_widget.hide()
         self.img_import_widget.hide()
-        
+        self.use_img_as_widget.hide()
+
         # Show only the relevant widgets
         if text == "Elliptic" or text == "Rectangular":  # Fixed condition
             self.simple_aperture_widget.show()
@@ -355,6 +377,7 @@ class ApertureSection(QWidget):
             self.squ_array_widget.show()
         elif text == "Image":
             self.img_import_widget.show()
+            self.use_img_as_widget.show()
         self.update_aperture_graph()
 
     def get_inputs(self):
@@ -462,7 +485,11 @@ class ApertureSection(QWidget):
             return square_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, square_size=square_size, dx=dx)
         
         elif shape == "Image":
-            return self.open_image()
+            img = self.open_image()
+            if self.img_attr == "Amplitude":
+                return img
+            else:
+                return np.exp(-1j*img)
               
     def update_aperture_graph(self):
         self.sync_attributes_from_widgets()  # sync attributes from widgets before generating aperture
@@ -581,6 +608,13 @@ class ApertureSection(QWidget):
         img = img/img.max()
         img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
+    
+    def use_image_as(self):
+        if self.img_amp.isChecked():
+            self.img_attr = "Amplitude"
+        else:
+            self.img_attr = "Phase"
+        
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
