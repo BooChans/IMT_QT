@@ -27,7 +27,7 @@ class OpticalDiffractionSimulator(QMainWindow):
         super().__init__()
 
         self.expert_mode = False
-        self.window_size = "512"
+        self.matrix_size = "512"
         self.sampling = "1.0"
 
         #menu_bar = self.menuBar()
@@ -60,10 +60,10 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.global_params_widget = QWidget()
         self.global_params_widget_layout = QHBoxLayout(self.global_params_widget)
 
-        window_size_label = QLabel("Window Size :")
+        window_size_label = QLabel("Matrix Size :")
         self.window_size_combo = QComboBox()
         self.window_size_combo.addItems(["512", "1024"])
-        self.window_size_combo.setCurrentText(self.window_size)
+        self.window_size_combo.setCurrentText(self.matrix_size)
 
         sampling_label = QLabel("Sampling :")
         self.sampling_combo = QComboBox()
@@ -436,9 +436,9 @@ class OpticalDiffractionSimulator(QMainWindow):
         None
 
     def update_window_size(self):
-        self.window_size = self.window_size_combo.currentText()
+        self.matrix_size = self.window_size_combo.currentText()
 
-        window_size_tuple = (self.window_size, self.window_size)
+        window_size_tuple = (self.matrix_size, self.matrix_size)
 
         self.source_section.array_shape = window_size_tuple
         self.aperture_section.array_shape = window_size_tuple
@@ -447,6 +447,7 @@ class OpticalDiffractionSimulator(QMainWindow):
 
         self.source_section.update_graph()
         self.aperture_section.update_aperture_graph()
+        self.update_illumination_of_aperture()
 
     def update_sampling_simple(self):
         self.sampling = self.sampling_combo.currentText()
@@ -456,6 +457,7 @@ class OpticalDiffractionSimulator(QMainWindow):
 
         self.source_section.update_graph()
         self.aperture_section.update_aperture_graph()
+        self.update_illumination_of_aperture()
 
     def update_illumination_of_aperture(self):
         aperture = self.aperture_section.aperture

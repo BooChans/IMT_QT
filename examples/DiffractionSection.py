@@ -71,7 +71,7 @@ class RealTimeCrossSectionViewer(QWidget):
         self.splitter.addWidget(self.cross_section_container)
         self.layout.addWidget(self.splitter)
 
-        self.window_info_widget = QLabel(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+        self.window_info_widget = QLabel(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
         self.layout.addWidget(self.window_info_widget)
 
         self.layout.addWidget(QLabel("Zoom:"))
@@ -371,7 +371,7 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
         self.slider_visibility()
         self.update_line()
-        self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+        self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
 
     def update_data_ap(self, new_source): #useful only for apertures
         volume = self.apply_display_mode_manual(new_source,"Intensity")
@@ -493,7 +493,7 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
         self.slider_visibility()
         self.update_line()
-        self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+        self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
 
     def apply_display_mode(self):
         mode = self.mode_selector.currentText()
@@ -551,7 +551,7 @@ class RealTimeCrossSectionViewer(QWidget):
             self.sampling = self.samplings[idx]
             self.update_cross_section_slice(slice_data)
             self.update_overlay_scale_bar_position()
-            self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+            self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
             self.slice_view.setLevels(lower, upper)
 
 
