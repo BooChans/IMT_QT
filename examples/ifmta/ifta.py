@@ -81,7 +81,6 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
     else:
         shape = (n_iter + 1, h, w)
     holo_phase_fields = np.zeros(shape)
-    print(holo_phase_fields.shape)
     holo_phase_fields[cont] = image_phase   
 
 

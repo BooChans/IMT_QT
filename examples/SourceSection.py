@@ -19,16 +19,18 @@ class SourceSection(QWidget):
         self.source_type = "Plane Wave"
         self.wavelength = "0.633"
         self.beam_shape = "Rectangular"
-        self.size = ("300","300")
+        self.size = ("300","300") #not currently in use
         self.distance_unit = "µm"
         self.waist = "300"
-        self.sampling = "1.0" #µm*
+        self.sampling = "1.0" #µm 
         self.array_shape = ("512","512")
         self.focal_length = "1e3"
 
-        self.light_source = plane_wave_rectangular(size=tuple(map(int, self.size)))
+        self.light_source = plane_wave_rectangular(shape=tuple(map(int,self.array_shape)))
         self.light_source = np.repeat(self.light_source[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.light_source)
+        self.graph_widget.slice_view.setLevels(0,1)
+        self.graph_widget.display_widget.hide()
 
 
         self.setup_ui()
@@ -141,9 +143,10 @@ class SourceSection(QWidget):
         self.plane_wave_size_layout.addWidget(x_label)
         self.plane_wave_size_layout.addWidget(self.wdiameter_line_edit)
 
-        self.plane_wave_layout.addWidget(self.plane_wave_shape_widget)
-        self.plane_wave_layout.addWidget(self.plane_wave_size_widget)
-        self.page_layout.addWidget(self.plane_wave_widget)
+        #set of widgets removed from final version for students
+        #self.plane_wave_layout.addWidget(self.plane_wave_shape_widget)
+        #self.plane_wave_layout.addWidget(self.plane_wave_size_widget)
+        #self.page_layout.addWidget(self.plane_wave_widget)
 
         # Widgets for Gaussian Beam
         self.gaussian_widget = QWidget()
@@ -178,6 +181,7 @@ class SourceSection(QWidget):
 
         self.option1.toggled.connect(self.update_graph)
         self.option2.toggled.connect(self.update_graph)
+        self.option3.toggled.connect(self.update_graph)
         self.option_e.toggled.connect(self.update_graph)
         self.option_r.toggled.connect(self.update_graph)
         self.unit_combo.currentIndexChanged.connect(self.update_graph)
@@ -189,15 +193,15 @@ class SourceSection(QWidget):
 
     def update_beam_widgets(self):
         if self.option1.isChecked():
-            self.plane_wave_widget.show()
+            #self.plane_wave_widget.show() deprecated
             self.gaussian_widget.hide()
             self.focal_length_widget.hide()
         elif self.option2.isChecked():
-            self.plane_wave_widget.hide()
+            #self.plane_wave_widget.hide() deprecated
             self.gaussian_widget.show()
             self.focal_length_widget.hide()
         else:
-            self.plane_wave_widget.hide()
+            #self.plane_wave_widget.hide() deprecated
             self.gaussian_widget.hide()
             self.focal_length_widget.show()
 
@@ -214,7 +218,12 @@ class SourceSection(QWidget):
 
 
     def get_inputs(self):
-        self.source_type = "Plane Wave" if self.option1.isChecked() else "Gaussian Beam"
+        if self.option1.isChecked():
+            self.source_type = "Plane Wave"
+        elif self.option2.isChecked():
+            self.source_type = "Gaussian beam"
+        else:
+            self.source_type = "Converging spherical wave"
         self.beam_shape = "Elliptic" if self.option_e.isChecked() else "Rectangular"
         self.distance_unit = self.unit_combo.currentText()
         self.wavelength = self.wavelength_line_edit.text()
@@ -258,13 +267,14 @@ class SourceSection(QWidget):
             if inputs["beam_shape"] == "Elliptic":
                 new_source = plane_wave_elliptical(shape=shape, size=(h_size, w_size), dx=dx)
             else:
-                new_source = plane_wave_rectangular(shape=shape, size=(h_size, w_size), dx=dx)
+                new_source = plane_wave_rectangular(shape=shape)
 
             # Add batch dimension for compatibility
             new_source = np.expand_dims(new_source, axis=0)
 
         elif inputs["source_type"] == "Gaussian beam":
             # Gaussian beam generation with waist
+            print("hi, gaussian beam")
             try:
                 waist = float(inputs["beam waist"])
             except Exception as e:
@@ -280,7 +290,7 @@ class SourceSection(QWidget):
                 shape = array_shape
                 focal_length = float(inputs['focal_length'])
                 wavelength = float(inputs['wavelength'])
-                base_source = converging_spherical_wave(shape=shape, wavelength=wavelength, focal_length= focal_length)
+                base_source = converging_spherical_wave(shape=shape, wavelength=wavelength, focal_length=focal_length, dx = float(self.sampling))
                 new_source = np.expand_dims(base_source, axis=0)
             except Exception as e:
                 print("Invalid params for converging parameters :", e)
@@ -289,6 +299,8 @@ class SourceSection(QWidget):
         # Update graph widget with new source data
         self.light_source = new_source
         self.graph_widget.update_data(new_source)
+        self.graph_widget.slice_view.setLevels(0,1)
+
 
     def setup_focal_length_widget(self):
         self.focal_length_widget = QWidget()

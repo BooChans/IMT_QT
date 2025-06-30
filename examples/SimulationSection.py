@@ -10,8 +10,9 @@ from pyqtgraph import LineSegmentROI, InfiniteLine
 from scipy.ndimage import map_coordinates
 import sys
 
+from ressource_path import resource_path
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, near_field, angular_spectrum, sweep
+from diffraction_propagation import far_field, near_field, angular_spectrum, sweep, sweep_w
 from resizing_ import crop_to_signal, format_if_large
 
 
@@ -25,6 +26,10 @@ class SimulationSection(QWidget):
         self.start_sweep = "1e2"
         self.end_sweep = "1e4"
         self.step_sweep = "100"
+
+        self.start_sweep_w = "0.450"
+        self.end_sweep_w = "0.950"
+        self.step_sweep_w = "0.01"
         self.graph_widget = RealTimeCrossSectionViewer(self.volume)
         self.setup_ui()
         self.setup_connections()
@@ -109,14 +114,46 @@ class SimulationSection(QWidget):
         self.widget_layout.addWidget(self.sweep_widget)
         self.sweep_widget.hide()
 
+        self.checkbox_sweep_w = QCheckBox("Wavelength Sweep")
+        self.widget_layout.addWidget(self.checkbox_sweep_w)
+
+        self.sweep_widget_w = QWidget()
+        self.sweep_widget_w_layout = QHBoxLayout(self.sweep_widget_w)
+
+        self.sweep_widget_w_layout.addWidget(QLabel("start : end : step"))
+        self.sweep_widget_w_layout.addStretch()
+
+        self.start_sweep_w_line_edit = QLineEdit()
+        self.start_sweep_w_line_edit.setText(self.start_sweep_w)
+
+        self.end_sweep_w_line_edit = QLineEdit()
+        self.end_sweep_w_line_edit.setText(self.end_sweep_w)
+        
+        self.step_sweep_w_line_edit = QLineEdit()
+        self.step_sweep_w_line_edit.setText(self.step_sweep_w)
+
+        self.sweep_widget_w_layout.addWidget(self.start_sweep_w_line_edit)
+        self.sweep_widget_w_layout.addWidget(self.end_sweep_w_line_edit)
+        self.sweep_widget_w_layout.addWidget(self.step_sweep_w_line_edit)
+
+        
+
+        self.widget_layout.addWidget(self.sweep_widget_w)
+        self.sweep_widget_w.hide()
+        #self.sweep_w_widget.hide()
+
         # Create button
         self.go_button = QPushButton("Run Simulation")
-        self.go_button.setIcon(QIcon("icons/arrows.png"))
+        self.go_button.setIcon(QIcon(resource_path("icons/arrows.png")))
         self.go_button.setIconSize(QSize(24, 24))
 
-        self.sweep_button = QPushButton("Sweep")
-        self.sweep_button.setIcon(QIcon("icons/game.png"))  # Change icon if needed
+        self.sweep_button = QPushButton("Z Sweep")
+        self.sweep_button.setIcon(QIcon(resource_path("icons/game.png")))  # Change icon if needed
         self.sweep_button.setIconSize(QSize(24, 24))
+
+        self.sweep_button_w = QPushButton("Wavelength Sweep")
+        self.sweep_button_w.setIcon(QIcon(resource_path("icons/blue_arrow.png")))  # Change icon if needed
+        self.sweep_button_w.setIconSize(QSize(24, 24))
 
         # Style it
         button_style = """
@@ -134,9 +171,10 @@ class SimulationSection(QWidget):
 
         self.go_button.setStyleSheet(button_style.format(color="green", hover="#eaffea"))
         self.sweep_button.setStyleSheet(button_style.format(color="red", hover="#ffeaea"))
-
+        self.sweep_button_w.setStyleSheet(button_style.format(color="blue", hover="#b9dbfe"))
 
         self.sweep_button.hide()
+        self.sweep_button_w.hide()
         # Fix the button size (optional)
         self.go_button.setFixedWidth(220)  # or whatever width looks good
         self.sweep_button.setFixedWidth(220)  # or whatever width looks good
@@ -146,6 +184,7 @@ class SimulationSection(QWidget):
         right_layout = QHBoxLayout()
         right_layout.addWidget(self.go_button)
         right_layout.addWidget(self.sweep_button)  # pushes the button to the left
+        right_layout.addWidget(self.sweep_button_w)
         right_layout.addStretch()
         # Add this layout to your main layout
         self.widget_layout.addLayout(right_layout)
@@ -154,11 +193,16 @@ class SimulationSection(QWidget):
         self.checkbox.stateChanged.connect(self.update_sampling_input)
         self.combo_res.currentTextChanged.connect(self.update_resolution)
         self.checkbox_sweep.stateChanged.connect(self.update_sweep_visibility)
+        self.checkbox_sweep_w.stateChanged.connect(self.update_sweep_w_visibility)
+
 
         self.start_sweep_line_edit.editingFinished.connect(self.update_sweep_params)
         self.step_sweep_line_edit.editingFinished.connect(self.update_sweep_params)
         self.end_sweep_line_edit.editingFinished.connect(self.update_sweep_params)
 
+        self.start_sweep_w_line_edit.editingFinished.connect(self.update_sweep_w_params)
+        self.step_sweep_w_line_edit.editingFinished.connect(self.update_sweep_w_params)
+        self.end_sweep_w_line_edit.editingFinished.connect(self.update_sweep_w_params)
 
     def get_inputs(self):
         """
@@ -204,7 +248,7 @@ class SimulationSection(QWidget):
         except Exception as e:
             print(f"Error : {e}")
 
-    def update_sweep(self, source, aperture, wavelength, z, dx):
+    def update_sweep(self, source, aperture, wavelength, dx):
         try:
             assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
             U0 = source * aperture
@@ -219,7 +263,22 @@ class SimulationSection(QWidget):
         self.graph_widget.update_cursor_labels()
         self.graph_widget.on_time_changed()
 
-         
+
+    def update_sweep_w(self, source, aperture, z, dx):
+        try:
+            assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
+            U0 = source * aperture
+            w_start = float(self.start_sweep_w)
+            w_step = float(self.step_sweep_w)
+            w_end = float(self.end_sweep_w)
+            self.volume, self.graph_widget.samplings = sweep_w(U0, z, dx, w_start, w_end, w_step)
+        except Exception as e:
+            print(f"Update sweep error : {e}")
+        self.graph_widget.update_data(self.volume)
+        self.graph_widget.update_cross_section()
+        self.graph_widget.update_cursor_labels()
+        self.graph_widget.on_time_changed()
+
     
     def pixout(self, source, wavelength, z, dx):
         N = max(source.shape)
@@ -246,9 +305,20 @@ class SimulationSection(QWidget):
         self.sweep_widget.setVisible(checked)
         self.sweep_button.setVisible(checked)
 
+    def update_sweep_w_visibility(self, checked):
+        self.sweep_widget_w.setVisible(checked)
+        self.sweep_button_w.setVisible(checked)
+
     def update_sweep_params(self):
         self.start_sweep = self.start_sweep_line_edit.text()
         self.end_sweep = self.end_sweep_line_edit.text()
         self.step_sweep = self.step_sweep_line_edit.text()
 
         print(self.step_sweep, self.start_sweep, self.end_sweep)
+
+    def update_sweep_w_params(self):
+        self.start_sweep_w = self.start_sweep_w_line_edit.text()
+        self.end_sweep_w = self.end_sweep_w_line_edit.text()
+        self.step_sweep_w = self.step_sweep_w_line_edit.text()
+
+        print(self.step_sweep_w, self.start_sweep_w, self.end_sweep_w)

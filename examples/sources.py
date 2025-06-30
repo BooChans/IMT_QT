@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from windows import RealTimeCrossSectionViewer 
 
-def plane_wave_rectangular(shape = (512,512), size = (100,100), dx = 1):
+def plane_wave_rectangular(shape = (512,512)):
     """
     Create a centered rectangular aperture.
 
@@ -15,14 +15,7 @@ def plane_wave_rectangular(shape = (512,512), size = (100,100), dx = 1):
         2D np.array: Binary image with 1s inside the rectangle, 0s outside.
     """
     # Create a SQUARE aperture (instead of circular)
-    h, w = shape
-    hr, wr = size
-    assert hr / dx < h, "Sampling value is too low"
-    assert wr / dx < w, "Sampling value is too low"
-    x = np.arange(-w//2, w//2) * dx
-    y = np.arange(-h//2, h//2) * dx
-    X, Y = np.meshgrid(x, y)
-    aperture = ((np.abs(X) <= wr/2) & (np.abs(Y) <= hr/2)).astype(np.float64)  # Square mask
+    aperture = np.ones(shape)
     return aperture.astype(np.float64)
 
 def plane_wave_elliptical(shape = (512,512), size = (200,300), dx = 1):
@@ -83,8 +76,7 @@ def converging_spherical_wave(shape=(512, 512), wavelength = 0.633, focal_length
     X,Y = np.meshgrid(x,y)
 
     source = np.exp( -1j * np.pi/(focal_length*wavelength)*(X**2 + Y**2))
-    source /= np.abs(source) + 1e-12
-    print(np.abs(source).min(), np.abs(source).max())
+    source /= np.abs(source)
     return source
 
 if __name__ == "__main__":

@@ -83,18 +83,6 @@ class RealTimeCrossSectionViewer(QWidget):
         self.toggle_line_cb.setChecked(False)
         self.toggle_line_cb.stateChanged.connect(self.toggle_line_roi)
 
-        self.display_widget = QWidget()
-        self.display_widget_layout = QHBoxLayout(self.display_widget)
-        self.mode_selector = QComboBox()
-        self.mode_selector.addItems(["Amplitude", "Intensity", "Log-Amplitude", "Phase"])
-        self.mode_selector.currentIndexChanged.connect(self.update_display_mode)
-        self.mode_selector.currentIndexChanged.connect(self.on_time_changed)
-        self.display_widget_layout.addWidget(QLabel("Display Mode:"))
-        self.display_widget_layout.addStretch()
-        self.display_widget_layout.addWidget(self.mode_selector)
-
-        self.layout.addWidget(self.display_widget)
-
 
         self.vline = pg.InfiniteLine(angle=90, movable=False, pen=pg.mkPen('g'))
         self.hline = pg.InfiniteLine(angle=0, movable=False, pen=pg.mkPen('g'))
@@ -161,6 +149,17 @@ class RealTimeCrossSectionViewer(QWidget):
         self.cursor_lines_toggle_cb.setChecked(False) 
         self.cursor_label.setVisible(False)
 
+        self.display_widget = QWidget()
+        self.display_widget_layout = QHBoxLayout(self.display_widget)
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItems(["Intensity", "Amplitude", "Log-Amplitude", "Phase"])
+        self.mode_selector.currentIndexChanged.connect(self.update_display_mode)
+        self.mode_selector.currentIndexChanged.connect(self.on_time_changed)
+        self.display_widget_layout.addWidget(QLabel("Display Mode:"))
+        self.display_widget_layout.addStretch()
+        self.display_widget_layout.addWidget(self.mode_selector)
+
+        self.layout.addWidget(self.display_widget)
 
 
 

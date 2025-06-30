@@ -9,10 +9,12 @@ import pyqtgraph as pg
 from pyqtgraph import LineSegmentROI, InfiniteLine
 from scipy.ndimage import map_coordinates
 import sys
-import traceback
+import os
+
 
 from automatic_sizing import auto_sampling_N, auto_shaping_dx, zero_pad
 import matplotlib.pyplot as plt
+from ressource_path import resource_path
 
 from SourceSection import SourceSection
 from ApertureSection import ApertureSection
@@ -71,7 +73,7 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.global_params_widget_layout.addWidget(window_size_label)
         self.global_params_widget_layout.addStretch()
         self.global_params_widget_layout.addWidget(self.window_size_combo)
-        self.global_params_widget_layout.addSpacing(30)
+        self.global_params_widget_layout.addSpacing(10)
         self.global_params_widget_layout.addWidget(sampling_label)
         self.global_params_widget_layout.addStretch()
         self.global_params_widget_layout.addWidget(self.sampling_combo)
@@ -85,6 +87,7 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.left_widget_layout.addWidget(splitter_)
         self.left_widget_layout.addWidget(label)
         self.left_widget_layout.addWidget(self.global_params_widget)
+
 
 
         splitter = QSplitter(Qt.Horizontal)
@@ -108,6 +111,7 @@ class OpticalDiffractionSimulator(QMainWindow):
         # Go Button
         self.go_button = self.simulation_section.go_button
         self.sweep_button = self.simulation_section.sweep_button
+        self.sweep_button_w = self.simulation_section.sweep_button_w
 
 
 
@@ -131,6 +135,7 @@ class OpticalDiffractionSimulator(QMainWindow):
     def setup_connections(self): 
         self.go_button.clicked.connect(self.run_simulation)
         self.sweep_button.clicked.connect(self.run_sweep)
+        self.sweep_button_w.clicked.connect(self.run_sweep_w)
 
         #start : unnecessary connections
         self.source_section.hdiameter_line_edit.editingFinished.connect(self.update_sampling)
@@ -228,28 +233,58 @@ class OpticalDiffractionSimulator(QMainWindow):
             print(f"Exception in run_simulation: {e}")
     
     def run_sweep(self):
-    # 1. Get the aperture mask
-        aperture_params = self.aperture_section.get_inputs()
-        aperture = self.aperture_section.aperture
+        try:
+        # 1. Get the aperture mask
+            aperture_params = self.aperture_section.get_inputs()
+            aperture = self.aperture_section.aperture
 
-        # 2. Get the source distribution
-        source_params = self.source_section.get_inputs()
-        source = self.source_section.light_source
+            # 2. Get the source distribution
+            source_params = self.source_section.get_inputs()
+            source = self.source_section.light_source
 
-        # 3. Get wavelength, distance, pixel size
-        wavelength = float(source_params['wavelength'])
-        z = float(aperture_params["simulation_distance"])
-        assert self.source_section.sampling == self.aperture_section.sampling
-        dx = float(self.source_section.sampling)   
-        assert max(aperture.shape) == max(source.shape)
-        N_win =  max(aperture.shape)
-        N_target = int(self.simulation_section.resolution_multiplier) * N_win
-        if N_win < N_target :
-            new_shape = (N_target, N_target)
-            source = zero_pad(source, new_shape)
-            aperture = zero_pad(aperture, new_shape)
-        # 4. Update simulation
-        self.simulation_section.update_sweep(source, aperture, wavelength, z, dx)
+            # 3. Get wavelength, distance, pixel size
+            wavelength = float(source_params['wavelength'])
+            z = float(aperture_params["simulation_distance"])
+            assert self.source_section.sampling == self.aperture_section.sampling
+            dx = float(self.source_section.sampling)   
+            assert max(aperture.shape) == max(source.shape)
+            N_win =  max(aperture.shape)
+            N_target = int(self.simulation_section.resolution_multiplier) * N_win
+            if N_win < N_target :
+                new_shape = (N_target, N_target)
+                source = zero_pad(source, new_shape)
+                aperture = zero_pad(aperture, new_shape)
+            # 4. Update simulation
+            self.simulation_section.update_sweep(source, aperture, wavelength, dx)
+        except Exception as e:
+            print(f"Sweep error : {e}")
+
+    def run_sweep_w(self):
+        try:
+        # 1. Get the aperture mask
+            aperture_params = self.aperture_section.get_inputs()
+            aperture = self.aperture_section.aperture
+
+            # 2. Get the source distribution
+            source_params = self.source_section.get_inputs()
+            source = self.source_section.light_source
+
+            # 3. Get wavelength, distance, pixel size
+            wavelength = float(source_params['wavelength'])
+            z = float(aperture_params["simulation_distance"])
+            assert self.source_section.sampling == self.aperture_section.sampling
+            dx = float(self.source_section.sampling)   
+            assert max(aperture.shape) == max(source.shape)
+            N_win =  max(aperture.shape)
+            N_target = int(self.simulation_section.resolution_multiplier) * N_win
+            if N_win < N_target :
+                new_shape = (N_target, N_target)
+                source = zero_pad(source, new_shape)
+                aperture = zero_pad(aperture, new_shape)
+            # 4. Update simulation
+            self.simulation_section.update_sweep_w(source, aperture, z, dx)
+        except Exception as e:
+            print(f"Sweep error : {e}")
 
 
     def update_sampling(self):
@@ -390,7 +425,8 @@ if __name__ == "__main__":
 
 
     app = QApplication(sys.argv)
-    window = SplashScreen(OpticalDiffractionSimulator, "splashscreen_assets/ops_ss.png")
+    splash_path = resource_path("splashscreen_assets/ops_ss.png")
+    window = SplashScreen(OpticalDiffractionSimulator, splash_path)
     window.show()
     app.exec()
 

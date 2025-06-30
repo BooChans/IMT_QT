@@ -133,4 +133,26 @@ def sweep(U0, wavelength, dx, z_start, z_end, step):
 
     return diffraction_patterns, samplings
 
+def sweep_w(U0, z, dx, w_start, w_end, step):
+    N = max(U0.shape)
+    W = np.arange(w_start, w_end, step)
+
+    h, w = U0.shape[1:3]
+    l = len(W)
+
+    shape = (l,h,w)
+    diffraction_patterns = np.zeros(shape, dtype=np.complex128)
+    samplings = np.zeros((l))
+
+    for i in range(len(W)):
+        wavelength = W[i] 
+        z_limit = N * dx**2 / wavelength
+        if abs(z) < z_limit:
+            diffraction_patterns[i] = angular_spectrum(U0, wavelength, z, dx)
+            samplings[i] = dx 
+        else:
+            diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
+            samplings[i] = wavelength * abs(z) / (N * dx)
+
+    return diffraction_patterns, samplings
 

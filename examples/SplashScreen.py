@@ -19,7 +19,6 @@ class SplashScreen(QWidget):
         layout = QVBoxLayout()
         label = QLabel()
         pixmap = QPixmap(img_path)
-        print("Pixmap loaded?", not pixmap.isNull())  # Should print True
 
         available_width = self.width()
         available_height = self.height() - 50  # reserve 50px for button
