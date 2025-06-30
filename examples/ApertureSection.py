@@ -44,6 +44,7 @@ class ApertureSection(QWidget):
 
         self.aperture = elliptical_aperture(size = tuple(map(int, self.aperture_size)))
         self.aperture = np.repeat(self.aperture[np.newaxis, :, :], 1, axis=0)
+        self.illuminated_aperture = None
         self.graph_widget = RealTimeCrossSectionViewer(self.aperture)
         self.graph_widget.display_widget.hide()
         self.setup_ui()

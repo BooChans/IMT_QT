@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 from PyQt5.QtWidgets import QApplication
-from windows import RealTimeCrossSectionViewer 
+from DiffractionSection import RealTimeCrossSectionViewer 
 
 def plane_wave_rectangular(shape = (512,512)):
     """

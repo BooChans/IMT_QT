@@ -373,6 +373,11 @@ class RealTimeCrossSectionViewer(QWidget):
         self.update_line()
         self.window_info_widget.setText(f"Window Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
 
+    def update_data_ap(self, new_source): #useful only for apertures
+        volume = self.apply_display_mode_manual(new_source,"Intensity")
+        self.current_slice = 0
+        self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
+
     def add_overlay_scale_bar(self, pixel_length=100):
         """
         Adds a floating overlay scale bar that stays in the same screen position.
@@ -502,6 +507,18 @@ class RealTimeCrossSectionViewer(QWidget):
             return np.angle(self.volume)
         else:
             return np.abs(self.volume)
+        
+    def apply_display_mode_manual(self,new_source,mode):
+        if mode == "Amplitude":
+            return np.abs(new_source)
+        elif mode == "Intensity":
+            return np.abs(new_source) ** 2
+        elif mode == "Log-Amplitude":
+            return np.log(np.abs(new_source))  # log(1 + amplitude)
+        elif mode == "Phase":
+            return np.angle(new_source)
+        else:
+            return np.abs(new_source)
         
     def apply_display_mode_slice(self, slice):
         mode = self.mode_selector.currentText()

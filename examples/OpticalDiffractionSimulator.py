@@ -127,6 +127,7 @@ class OpticalDiffractionSimulator(QMainWindow):
 
 
         self.setup_connections()
+        self.update_illumination_of_aperture()
         #hide histograms & RoIPl
         # Optional: initial run
         # self.run_simulation()
@@ -197,7 +198,40 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.aperture_section.hel_sd_line_edit.editingFinished.connect(self.update_samlping_input)
         
         self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_samlping_input)
-        #
+        
+        self.source_section.hdiameter_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.source_section.wdiameter_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+
+        self.aperture_section.shape_combo.currentTextChanged.connect(self.update_illumination_of_aperture)
+        self.aperture_section.unit_combo.currentTextChanged.connect(self.update_illumination_of_aperture)
+
+        # Line edits for simulation distance
+        self.aperture_section.dst_sim_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+
+        # Simple aperture size line edits
+        self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.simple_size_w_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+
+        # Slit aperture line edits
+        self.aperture_section.slit_size_h_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.slit_size_w_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.slit_width_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.slit_distance_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+
+        # Array aperture line edits
+        self.aperture_section.matrix_h_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.matrix_w_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.matrix_spacing_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        
+        self.aperture_section.hel_bd_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        self.aperture_section.hel_sd_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+        
+        self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
+
+        self.source_section.option1.toggled.connect(self.update_illumination_of_aperture)
+        self.source_section.option2.toggled.connect(self.update_illumination_of_aperture)
+        self.source_section.option3.toggled.connect(self.update_illumination_of_aperture)
 
         self.simulation_section.sampling_line_edit.editingFinished.connect(self.update_window)
         self.simulation_section.checkbox.stateChanged.connect(self.restore_auto_sampling)
@@ -420,6 +454,15 @@ class OpticalDiffractionSimulator(QMainWindow):
 
         self.source_section.update_graph()
         self.aperture_section.update_aperture_graph()
+
+    def update_illumination_of_aperture(self):
+        aperture = self.aperture_section.aperture
+        source = self.source_section.light_source
+
+        U0 = aperture * source +0.35*source * (1 - aperture)
+        self.aperture_section.illuminated_aperture = U0
+        self.aperture_section.graph_widget.update_data_ap(U0)
+        self.aperture_section.graph_widget.slice_view.setLevels(0,1)
 
 if __name__ == "__main__":
 
