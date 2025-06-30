@@ -233,6 +233,8 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.source_section.option2.toggled.connect(self.update_illumination_of_aperture)
         self.source_section.option3.toggled.connect(self.update_illumination_of_aperture)
 
+        self.aperture_section.img_file_button.clicked.connect(self.update_illumination_of_aperture)
+
         self.simulation_section.sampling_line_edit.editingFinished.connect(self.update_window)
         self.simulation_section.checkbox.stateChanged.connect(self.restore_auto_sampling)
 
@@ -459,10 +461,10 @@ class OpticalDiffractionSimulator(QMainWindow):
         aperture = self.aperture_section.aperture
         source = self.source_section.light_source
 
-        U0 = aperture * source +0.35*source * (1 - aperture)
+        U0 = aperture + 0.4*np.abs(source)
         self.aperture_section.illuminated_aperture = U0
         self.aperture_section.graph_widget.update_data_ap(U0)
-        self.aperture_section.graph_widget.slice_view.setLevels(0,1)
+        self.aperture_section.graph_widget.slice_view.setLevels(0,1.4)
 
 if __name__ == "__main__":
 
