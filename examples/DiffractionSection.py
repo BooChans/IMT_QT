@@ -377,6 +377,7 @@ class RealTimeCrossSectionViewer(QWidget):
         volume = self.apply_display_mode_manual(new_source,"Intensity")
         self.current_slice = 0
         self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
+        self.slider_visibility()
 
     def add_overlay_scale_bar(self, pixel_length=100):
         """
@@ -480,7 +481,7 @@ class RealTimeCrossSectionViewer(QWidget):
             self.update_cross_section()
 
     def slider_visibility(self):
-
+        print(self.volume.shape[0], "check here")
         if self.volume.shape[0] == 1:
             self.slice_view.ui.roiPlot.hide()
 

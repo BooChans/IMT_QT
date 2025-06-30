@@ -274,7 +274,6 @@ class SourceSection(QWidget):
 
         elif inputs["source_type"] == "Gaussian beam":
             # Gaussian beam generation with waist
-            print("hi, gaussian beam")
             try:
                 waist = float(inputs["beam waist"])
             except Exception as e:
