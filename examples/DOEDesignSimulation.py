@@ -12,7 +12,7 @@ from PIL import Image
 from ifmta.ifta import Ifta
 from automatic_sizing import zero_pad
 
-class EODConfigurator(QMainWindow):
+class DOEDesignSimulation(QMainWindow):
     def __init__(self):
         super().__init__()
 

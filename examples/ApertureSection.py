@@ -8,6 +8,7 @@ import pyqtgraph as pg
 from pyqtgraph import LineSegmentROI, InfiniteLine
 from scipy.ndimage import map_coordinates
 import sys
+import os
 
 from DiffractionSection import RealTimeCrossSectionViewer
 from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_apeture, estimate_aperture_extent
@@ -593,7 +594,7 @@ class ApertureSection(QWidget):
         
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "All Files (*);;(*.jpg);; (*.png);; (*.bmp);; (*.tiff)"
+            self, "Select File", "", "All Files (*);;(*.jpg);; (*.png);; (*.bmp);; (*.tiff);; (*.npy)"
         )
         if file_path:
             self.img_file_line_edit.setText(file_path)
@@ -603,12 +604,16 @@ class ApertureSection(QWidget):
             file_path = None
             self.img_file_line_edit.setText("")
     def open_image(self):
-        img = Image.open(self.img_path).convert("L")
-        array_shape = tuple(map(int, self.array_shape))
-        img.thumbnail(array_shape,Image.LANCZOS)
-        img = np.array(img)
-        img = img/img.max()
-        img = zero_pad(np.array([img]), array_shape).squeeze()
+        ext = os.path.splitext(self.img_path)[1].lower()
+        if ext == ".npy":
+            img = np.load(self.img_path)
+        else:
+            img = Image.open(self.img_path).convert("L")
+            img = img/img.max()
+            array_shape = tuple(map(int, self.array_shape))
+            img.thumbnail(array_shape,Image.LANCZOS)
+            img = np.array(img)
+            img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
     
     def use_image_as(self):

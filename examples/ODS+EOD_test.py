@@ -16,10 +16,8 @@ img = zero_pad(np.array([img]), (512,512)).squeeze()
 
 eod = Ifta(img)
 
-plt.imshow(eod[-1])
-plt.imsave("assets/eod.png", eod[-1])
-plt.show()
 
-img = Image.open("assets/eod.png")
-img = np.array(img)
-print(img.shape)
+plt.imshow(eod[-1])
+np.save("assets/eod.npy", eod[-1])
+
+
