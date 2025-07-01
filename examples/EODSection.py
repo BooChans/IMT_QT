@@ -275,8 +275,10 @@ class EODSection(QWidget):
             print(volume.shape)
             if len(volume.shape) != 3:
                 volume = np.repeat(volume[np.newaxis, :, :], 1, 0)
-            self.result_window = RealTimeCrossSectionViewer(volume)
+            init_volume = np.zeros_like(volume)
+            self.result_window = RealTimeCrossSectionViewer(init_volume)
             self.result_window.sampling = sampling
+            self.result_window.update_data(volume)
             self.result_window.setWindowTitle("EOD Propagation")
             self.result_window.show()
         except Exception as e:
