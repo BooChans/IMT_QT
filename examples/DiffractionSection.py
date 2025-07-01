@@ -481,7 +481,6 @@ class RealTimeCrossSectionViewer(QWidget):
             self.update_cross_section()
 
     def slider_visibility(self):
-        print(self.volume.shape[0], "check here")
         if self.volume.shape[0] == 1:
             self.slice_view.ui.roiPlot.hide()
 
