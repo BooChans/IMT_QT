@@ -609,10 +609,10 @@ class ApertureSection(QWidget):
             img = np.load(self.img_path)
         else:
             img = Image.open(self.img_path).convert("L")
-            img = img/img.max()
             array_shape = tuple(map(int, self.array_shape))
             img.thumbnail(array_shape,Image.LANCZOS)
             img = np.array(img)
+            img = img/img.max()
             img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
     

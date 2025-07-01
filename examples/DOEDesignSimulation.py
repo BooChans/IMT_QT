@@ -18,6 +18,7 @@ class DOEDesignSimulation(QMainWindow):
 
         self.image_section = ImageSection()
         self.eod_section = EODSection()
+        self.eod_section.graph_view.mode_selector.setCurrentText("Amplitude")
 
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.image_section)
@@ -77,7 +78,7 @@ class DOEDesignSimulation(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = EODConfigurator()
+    window = DOEDesignSimulation()
     window.show()
     app.exec()
 
