@@ -18,36 +18,44 @@ class ImageSection(QWidget):
         super().__init__()
         #basic shape details, all units in µm
 
-        self.image_shape = "Elliptic"
-        self.image_array_shape = ("512", "512")
+        self.image_shape = "Image"
+        self.matrix_array_shape = ("512", "512")
+        self.img_size_in_matrix = ("256", "256")
+
+
+        #for circle and rectangle
         self.image_size = ("300", "300") 
         self.distance_unit = "µm"
         self.img_path = None
 
-        self.sampling = 1.0
+        self.offset_x = "0"
+        self.offset_y = "0"
+
+        self.sampling = "1.0"
 
 
-        image_array_shape = tuple(map(int, self.image_array_shape))
-        image_size = tuple(map(int, self.image_size))
-        sampling = float(self.sampling)
 
-        image = elliptical_aperture(shape = image_array_shape, size = image_size, dx = sampling)
+        matrix_size = tuple(map(int, self.matrix_array_shape))
+        image = np.zeros(matrix_size)
         self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.image)
-
-
+        self.graph_widget.display_widget.hide()
 
         self.setup_ui()
 
     def setup_ui(self):
 
         self.page_layout = QVBoxLayout(self)
+        self.page_layout.addWidget(QLabel("Target image"))
         self.page_layout.addWidget(self.graph_widget)
-        self.setup_unit()
-        self.setup_array_shape()
-        self.setup_shape()
-        self.setup_shape_dimensions()
         self.setup_image_importer()
+        self.setup_unit()
+        self.setup_matrix_shape()
+        self.setup_img_shape()
+        self.setup_offset()
+        self.setup_shape() #unused - to remove
+        self.setup_shape_dimensions()
+        self.update_gui_combo(self.image_shape)
         self.setup_connections()
 
     
@@ -67,6 +75,7 @@ class ImageSection(QWidget):
         self.unit_widget_layout.addWidget(self.unit_combo)
 
         self.page_layout.addWidget(self.unit_widget)
+    
 
     def setup_shape(self):
 
@@ -84,14 +93,16 @@ class ImageSection(QWidget):
         self.shape_widget_layout.addWidget(self.combo)
 
         self.page_layout.addWidget(self.shape_widget)
+        self.shape_widget.hide()
+
     
-    def setup_array_shape(self):
+    def setup_matrix_shape(self):
 
         self.array_shape_widget = QWidget()
         self.array_shape_widget_layout = QHBoxLayout(self.array_shape_widget)
 
-        array_shape_label = QLabel("Define the array shape")
-        array_shape = self.image_array_shape
+        array_shape_label = QLabel("Define the matrix shape")
+        array_shape = self.matrix_array_shape
 
         shape_x_label = QLabel("x")
 
@@ -111,6 +122,58 @@ class ImageSection(QWidget):
         self.array_shape_widget_layout.addWidget(self.w_shape_line_edit)
 
         self.page_layout.addWidget(self.array_shape_widget)
+    
+
+    def setup_img_shape(self):
+
+        self.img_shape_widget = QWidget()
+        self.img_shape_widget_layout = QHBoxLayout(self.img_shape_widget)
+
+        image_shape_label = QLabel("Define the image shape")
+        image_shape = self.img_size_in_matrix
+
+        img_shape_x_label = QLabel("x")
+
+
+        self.h_img_shape_line_edit = QLineEdit()
+        self.h_img_shape_line_edit.setFixedWidth(100)
+        self.h_img_shape_line_edit.setText(image_shape[0])
+
+        self.w_img_shape_line_edit = QLineEdit()
+        self.w_img_shape_line_edit.setFixedWidth(100)
+        self.w_img_shape_line_edit.setText(image_shape[1])
+
+        self.img_shape_widget_layout.addWidget(image_shape_label)
+        self.img_shape_widget_layout.addStretch()
+        self.img_shape_widget_layout.addWidget(self.h_img_shape_line_edit)
+        self.img_shape_widget_layout.addWidget(img_shape_x_label)
+        self.img_shape_widget_layout.addWidget(self.w_img_shape_line_edit)
+
+        self.page_layout.addWidget(self.img_shape_widget)
+    
+
+    def setup_offset(self):
+
+        self.offset_widget = QWidget()
+        self.offset_widget_layout = QHBoxLayout(self.offset_widget)
+
+        offset_label = QLabel("Offset x y")
+
+        self.offset_x_line_edit = QLineEdit()
+        self.offset_x_line_edit.setFixedWidth(100)
+        self.offset_x_line_edit.setText(self.offset_x)
+
+        self.offset_y_line_edit = QLineEdit()
+        self.offset_y_line_edit.setFixedWidth(100)
+        self.offset_y_line_edit.setText(self.offset_y)
+
+        self.offset_widget_layout.addWidget(offset_label)
+        self.offset_widget_layout.addStretch()
+        self.offset_widget_layout.addWidget(self.offset_x_line_edit)
+        self.offset_widget_layout.addWidget(self.offset_y_line_edit)
+
+        self.page_layout.addWidget(self.offset_widget)
+        
 
     def setup_shape_dimensions(self):
 
@@ -188,14 +251,14 @@ class ImageSection(QWidget):
 
     def get_inputs(self):
         self.image_shape = self.combo.currentText()
-        self.image_array_shape = (self.h_shape_line_edit.text(), self.w_shape_line_edit.text())
+        self.matrix_array_shape = (self.h_shape_line_edit.text(), self.w_shape_line_edit.text())
         self.image_size = (self.h_size_line_edit.text(), self.w_size_line_edit.text())
         self.distance_unit = self.unit_combo.currentText()
-        self.graph_widget.sampling = self.sampling
+        self.graph_widget.sampling = float(self.sampling)
 
         return {
             "image_shape" : self.image_shape,
-            "image_array_shape" : self.image_array_shape,
+            "matrix_array_shape" : self.matrix_array_shape,
             "image_shape_size" : self.image_size,
             "distance_unit" : self.distance_unit,
             "sampling" : self.sampling, 
@@ -206,15 +269,13 @@ class ImageSection(QWidget):
     def generate_image(self):
         image_params = self.get_inputs()
         image_shape_size = tuple(map(int, image_params['image_shape_size']))
-        image_array_shape = tuple(map(int, image_params['image_array_shape']))
+        matrix_array_shape = tuple(map(int, image_params['matrix_array_shape']))
         image_shape = image_params['image_shape']
-        dx = auto_sampling_N_2(source_size=image_shape_size, shape= image_array_shape)
-        self.sampling = dx
-        self.graph_widget.sampling = dx
+        dx = float(self.sampling)
         if image_shape == "Elliptic":
-            return elliptical_aperture(shape = image_array_shape, size = image_shape_size, dx=dx)
+            return elliptical_aperture(shape = matrix_array_shape, size = image_shape_size, dx=dx)
         if image_shape == "Rectangular":
-            return rectangular_aperture(shape = image_array_shape, size= image_shape_size, dx = dx)
+            return rectangular_aperture(shape = matrix_array_shape, size= image_shape_size, dx = dx)
         if image_shape == "Image":
             return self.open_image()
 
@@ -224,11 +285,12 @@ class ImageSection(QWidget):
         self.graph_widget.update_data(self.image)
     def open_image(self):
         img = Image.open(self.img_path).convert("L")
-        image_array_shape = tuple(map(int, self.image_array_shape))
-        img.thumbnail(image_array_shape,Image.LANCZOS)
+        matrix_array_shape = tuple(map(int, self.matrix_array_shape))
+        img_size_in_array = tuple(map(int, self.img_size_in_matrix))
+        img.thumbnail(img_size_in_array,Image.LANCZOS)
         img = np.array(img)
         img = img/img.max()
-        img = zero_pad(np.array([img]), image_array_shape).squeeze()
+        img = zero_pad(np.array([img]), matrix_array_shape).squeeze()
         return img
 
     def update_gui_combo(self, text):
@@ -239,6 +301,14 @@ class ImageSection(QWidget):
             self.img_import_widget.show()
         else: 
             self.shape_dimensions_widget.show()
+
+    def update_pixel_size(self):
+        self.sampling = self.sampling_line_edit.text()
+        self.graph_widget.sampling = float(self.sampling)
+        self.graph_widget.update_data(self.graph_widget.volume)
+
+
+
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -322,3 +322,9 @@ class SimulationSection(QWidget):
         self.step_sweep_w = self.step_sweep_w_line_edit.text()
 
         print(self.step_sweep_w, self.start_sweep_w, self.end_sweep_w)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = SimulationSection()
+    window.show()
+    app.exec()

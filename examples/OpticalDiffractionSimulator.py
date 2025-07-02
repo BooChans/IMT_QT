@@ -467,10 +467,17 @@ class OpticalDiffractionSimulator(QMainWindow):
         aperture = self.aperture_section.aperture
         source = self.source_section.light_source
 
-        U0 = np.abs(aperture) + 0.4*np.abs(source)
-        self.aperture_section.illuminated_aperture = U0
-        self.aperture_section.graph_widget.update_data_ap(U0)
-        self.aperture_section.graph_widget.slice_view.setLevels(0,1.4)
+        if self.source_section.source_type != "Gaussian beam":
+            U0 = np.abs(aperture) + 0.5*np.abs(source)
+            self.aperture_section.illuminated_aperture = U0
+            self.aperture_section.graph_widget.update_data_ap(U0)
+            self.aperture_section.graph_widget.slice_view.setLevels(0,1.5)
+        else:
+            U0 = np.abs(aperture) + 0.7*(1-aperture)*np.abs(source)
+            self.aperture_section.illuminated_aperture = U0
+            self.aperture_section.graph_widget.update_data_ap(U0)
+            self.aperture_section.graph_widget.slice_view.setLevels(0,1)
+
 
 if __name__ == "__main__":
 
