@@ -16,7 +16,7 @@ from ifmta.performance_criterias import ComputeEfficiency, ComputeUniformity
 
 
 
-def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
+def Ifta(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
 
     """
     Ifta : Iterative Fourier Transform Algorithm
@@ -47,11 +47,17 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
         target = target.squeeze()
 
     
-    if compute_efficiency:
-        efficiency = np.zeros(n_iter)             # memory allocation
+    if compute_efficiency and n_levels == 0:  # memory allocation
+        efficiency = np.zeros(n_iter_ph1)   
+    else: 
+        efficiency = np.zeros(n_iter_ph2)   
+      
         
-    if compute_uniformity:
-        uniformity = np.zeros(n_iter)             # memory allocation
+    if compute_uniformity and n_levels == 0:  # memory allocation
+
+        uniformity = np.zeros(n_iter_ph1) 
+    else:
+        uniformity = np.zeros(n_iter_ph2) 
     
     target_size = target.shape
     
@@ -77,9 +83,9 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
     cont = 0
     h,w = image_phase.shape
     if n_levels != 0:
-        shape = (2*n_iter+1, h, w)
+        shape = (n_iter_ph1 + n_iter_ph2 + 1, h, w)
     else:
-        shape = (n_iter + 1, h, w)
+        shape = (n_iter_ph1 + 1, h, w)
     holo_phase_fields = np.zeros(shape)
     holo_phase_fields[cont] = image_phase   
 
@@ -88,7 +94,7 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
     image_field = image_amp*np.exp(1j * image_phase)      # Initiate input field
     
     # First loop - continous phase screen computation
-    for k in range(n_iter):
+    for k in range(n_iter_ph1):
         cont+=1
         holo_field = np.fft.ifft2(np.fft.ifftshift(image_field))  # field ifta = TF-1 field image
         holo_phase = np.angle(holo_field)                         # save ifta phase
@@ -115,7 +121,7 @@ def Ifta(target, *, image_size=None, n_iter=25, rfact=1.2, n_levels=0, compute_e
 
     if n_levels != 0:
 
-        for k in range(n_iter):
+        for k in range(n_iter_ph2):
             cont += 1
             holo_field = np.fft.ifft2(np.fft.ifftshift(image_field))  # field ifta = TF-1 field image
             holo_phase = np.angle(holo_field)                         # get ifta phase. phase values between 0 and 2pi 

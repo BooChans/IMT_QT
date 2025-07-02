@@ -176,9 +176,9 @@ class SimulationSection(QWidget):
         self.sweep_button.hide()
         self.sweep_button_w.hide()
         # Fix the button size (optional)
-        self.go_button.setFixedWidth(220)  # or whatever width looks good
-        self.sweep_button.setFixedWidth(220)  # or whatever width looks good
-
+        self.go_button.setFixedWidth(200)  # or whatever width looks good
+        self.sweep_button.setFixedWidth(200)  # or whatever width looks good
+        self.sweep_button_w.setFixedWidth(200)
 
         # Right-align the button using a layout
         right_layout = QHBoxLayout()

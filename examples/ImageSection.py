@@ -225,7 +225,7 @@ class ImageSection(QWidget):
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "All Files (*);;(*.jpg);; (*.png);; (*.bmp);; (*.tiff)"
+            self, "Select File", "", "PNG (*.png);; JPEG (*.jpg);; BMP (*.bmp);; TIFF (*.tiff);; PGM (*.pgm) ;;All Files (*)"
         )
         if file_path:
             self.img_file_line_edit.setText(file_path)
@@ -247,6 +247,9 @@ class ImageSection(QWidget):
         self.h_size_line_edit.textChanged.connect(self.update_graph)
         self.w_size_line_edit.textChanged.connect(self.update_graph)
 
+        self.w_img_shape_line_edit.textChanged.connect(self.update_graph)
+        self.h_img_shape_line_edit.textChanged.connect(self.update_graph)
+
 
 
     def get_inputs(self):
@@ -255,11 +258,15 @@ class ImageSection(QWidget):
         self.image_size = (self.h_size_line_edit.text(), self.w_size_line_edit.text())
         self.distance_unit = self.unit_combo.currentText()
         self.graph_widget.sampling = float(self.sampling)
+        self.img_size_in_matrix = (self.h_img_shape_line_edit.text(), self.w_img_shape_line_edit.text())
+        self.offset_x = self.offset_x_line_edit.text()
+        self.offset_y = self.offset_y_line_edit.text()
 
         return {
-            "image_shape" : self.image_shape,
+            "image_shape" : self.image_shape, #size of elementary shapes : circle/rectangle
             "matrix_array_shape" : self.matrix_array_shape,
             "image_shape_size" : self.image_size,
+            "img_size_in_matrix" : self.img_size_in_matrix,
             "distance_unit" : self.distance_unit,
             "sampling" : self.sampling, 
             "img_path" : self.img_path,

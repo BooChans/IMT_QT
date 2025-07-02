@@ -14,6 +14,7 @@ from DiffractionSection import RealTimeCrossSectionViewer
 from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_apeture, estimate_aperture_extent
 from automatic_sizing import zero_pad
 from PIL import Image
+import tifffile
 
 class ApertureSection(QWidget):
     def __init__(self):
@@ -593,8 +594,8 @@ class ApertureSection(QWidget):
             return default
         
     def browse_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "All Files (*);;(*.jpg);; (*.png);; (*.bmp);; (*.tiff);; (*.npy)"
+        file_path, selected_filter = QFileDialog.getOpenFileName(
+            self, "Select File", "","JPEG (*.jpg);; PNG (*.png);; BMP (*.bmp);; TIFF (*.tiff);; PGM (*.pgm);; NumPy (*.npy);;  All Files (*)"
         )
         if file_path:
             self.img_file_line_edit.setText(file_path)
@@ -607,6 +608,8 @@ class ApertureSection(QWidget):
         ext = os.path.splitext(self.img_path)[1].lower()
         if ext == ".npy":
             img = np.load(self.img_path)
+        elif ext ==".tiff":
+            img = tifffile.imread(self.img_path)
         else:
             img = Image.open(self.img_path).convert("L")
             array_shape = tuple(map(int, self.array_shape))
@@ -615,6 +618,7 @@ class ApertureSection(QWidget):
             img = img/img.max()
             img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
+    
     
     def use_image_as(self):
         if self.img_amp.isChecked():
