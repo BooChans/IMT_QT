@@ -255,6 +255,7 @@ class SimulationSection(QWidget):
             z_start = float(self.start_sweep)
             z_step = float(self.step_sweep)
             z_end = float(self.end_sweep)
+            print(U0.shape)
             self.volume, self.graph_widget.samplings = sweep(U0, wavelength, dx, z_start,z_end, z_step)
         except Exception as e:
             print(f"Update sweep error : {e}")

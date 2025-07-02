@@ -16,6 +16,8 @@ from automatic_sizing import zero_pad
 from ressource_path import resource_path
 import tifffile
 
+from diffraction_propagation import angular_spectrum, far_field
+
 class DOEDesignSimulation(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -29,6 +31,7 @@ class DOEDesignSimulation(QMainWindow):
         self.npy_path = None
 
         self.phases = None
+        self.doe = None
         self.resize(2000, 1200)
 
         self.page = QWidget()
@@ -59,7 +62,9 @@ class DOEDesignSimulation(QMainWindow):
         self.ifta_params_widget = QWidget()
         self.ifta_params_widget_layout = QGridLayout(self.ifta_params_widget)
 
-
+        self.sim_doe = self.simulation_section.go_button
+        self.sim_doe_sweep = self.simulation_section.sweep_button
+        self.sim_doe_sweep_w = self.simulation_section.sweep_button_w
 
         splitter_ = QSplitter(Qt.Horizontal)
         
@@ -259,6 +264,10 @@ class DOEDesignSimulation(QMainWindow):
         self.nbiter_line_edit.textChanged.connect(self.sync_inputs)
         self.nbiter_pha_line_edit.textChanged.connect(self.sync_inputs)
 
+        self.sim_doe.clicked.connect(self.run_simulation)
+        self.sim_doe_sweep.clicked.connect(self.run_sweep)
+        self.sim_doe_sweep_w.clicked.connect(self.run_sweep_w)
+
     
     def sim_EOD(self):
         image_params = self.image_section.get_inputs()
@@ -291,6 +300,8 @@ class DOEDesignSimulation(QMainWindow):
         self.phases = phases
         self.eod_section.graph_view.samplings = float(self.eod_section.sampling) * np.ones((len(phases),))
         self.eod_section.graph_view.update_data(phases)
+        self.doe = phases[-1]
+        self.doe = self.doe[np.newaxis, :, :]
 
 
     def sync_inputs(self):
@@ -312,7 +323,89 @@ class DOEDesignSimulation(QMainWindow):
             "npy_path" : self.npy_path, 
         }
                 
-        
+    def run_simulation(self):
+        try:
+        # 1. Get the aperture mask
+            eod_params = self.eod_section.get_inputs()
+            doe_phase = self.doe
+            doe = np.exp(-1j*doe_phase)
+            tile = int(eod_params["tile"])
+            tile_shape = (tile, tile)
+            doe = np.tile(doe, tile_shape)
+
+            source = np.ones_like(doe)
+
+            # 3. Get wavelength, distance, pixel size
+            wavelength = float(eod_params['wavelength'])
+            z = float(eod_params["simulation_distance"])
+            dx = float(eod_params["sampling"])   
+            N_win =  max(doe.shape)
+            N_target = int(self.simulation_section.resolution_multiplier) * N_win
+            if N_win < N_target :
+                new_shape = (N_target, N_target)
+                source = zero_pad(source, new_shape)
+                doe = zero_pad(doe, new_shape)
+            # 4. Update simulation
+            self.simulation_section.update_diffraction(source, doe, wavelength, z, dx)
+        except Exception as e:
+            print(f"Exception in run_simulation: {e}")
+    
+    def run_sweep(self):
+        try:
+        # 1. Get the aperture mask
+            eod_params = self.eod_section.get_inputs()
+            doe_phase = self.doe
+            doe = np.exp(-1j*doe_phase)
+            tile = int(eod_params["tile"])
+            tile_shape = (tile, tile)
+            doe = np.tile(doe, tile_shape)
+
+
+            source = np.ones_like(doe)
+
+            # 3. Get wavelength, distance, pixel size
+            wavelength = float(eod_params['wavelength'])
+            z = float(eod_params["simulation_distance"])
+            dx = float(eod_params["sampling"])   
+            N_win =  max(doe.shape)
+            N_target = int(self.simulation_section.resolution_multiplier) * N_win
+            if N_win < N_target :
+                new_shape = (N_target, N_target)
+                source = zero_pad(source, new_shape)
+                doe = zero_pad(doe, new_shape)
+            # 4. Update simulation
+            self.simulation_section.update_sweep(source, doe, wavelength, dx)
+        except Exception as e:
+            print(f"Update sweep error : {e}")
+
+    def run_sweep_w(self):
+        try:
+        # 1. Get the aperture mask
+            eod_params = self.eod_section.get_inputs()
+            doe_phase = self.doe
+            doe = np.exp(-1j*doe_phase)
+            doe[np.newaxis, :, :]
+            tile = int(eod_params["tile"])
+            tile_shape = (tile, tile)
+            doe = np.tile(doe, tile_shape)
+
+
+            source = np.ones_like(doe)
+
+            # 3. Get wavelength, distance, pixel size
+            wavelength = float(eod_params['wavelength'])
+            z = float(eod_params["simulation_distance"])
+            dx = float(eod_params["sampling"])   
+            N_win =  max(doe.shape)
+            N_target = int(self.simulation_section.resolution_multiplier) * N_win
+            if N_win < N_target :
+                new_shape = (N_target, N_target)
+                source = zero_pad(source, new_shape)
+                doe = zero_pad(doe, new_shape)
+            # 4. Update simulation
+            self.simulation_section.update_sweep_w(source, doe, z, dx)
+        except Exception as e:
+            print(f"Update sweep error : {e}")
 
 
         

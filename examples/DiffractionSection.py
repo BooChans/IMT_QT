@@ -369,6 +369,7 @@ class RealTimeCrossSectionViewer(QWidget):
         volume = self.apply_display_mode()
         self.current_slice = 0
         self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
+        print(new_source.shape)
         self.slider_visibility()
         self.update_line()
         self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
