@@ -300,7 +300,7 @@ class ImageSection(QWidget):
             img = tifffile.imread(self.img_path)
         else:
             img = Image.open(self.img_path).convert("L")
-            array_shape = tuple(map(int, self.array_shape))
+            array_shape = tuple(map(int, self.matrix_array_shape))
             img.thumbnail(array_shape,Image.LANCZOS)
             img = np.array(img)
             img = img/img.max()
