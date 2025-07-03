@@ -12,6 +12,8 @@ from DiffractionSection import RealTimeCrossSectionViewer
 from apertures import elliptical_aperture, rectangular_aperture
 from automatic_sizing import auto_sampling_N_2, auto_sampling_dx_2, zero_pad
 from PIL import Image
+import os
+import tifffile 
 
 class ImageSection(QWidget):
     def __init__(self):
@@ -291,13 +293,18 @@ class ImageSection(QWidget):
         self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
         self.graph_widget.update_data(self.image)
     def open_image(self):
-        img = Image.open(self.img_path).convert("L")
-        matrix_array_shape = tuple(map(int, self.matrix_array_shape))
-        img_size_in_array = tuple(map(int, self.img_size_in_matrix))
-        img.thumbnail(img_size_in_array,Image.LANCZOS)
-        img = np.array(img)
-        img = img/img.max()
-        img = zero_pad(np.array([img]), matrix_array_shape).squeeze()
+        ext = os.path.splitext(self.img_path)[1].lower()
+        if ext == ".npy":
+            img = np.load(self.img_path)
+        elif ext ==".tiff":
+            img = tifffile.imread(self.img_path)
+        else:
+            img = Image.open(self.img_path).convert("L")
+            array_shape = tuple(map(int, self.array_shape))
+            img.thumbnail(array_shape,Image.LANCZOS)
+            img = np.array(img)
+            img = img/img.max()
+            img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
 
     def update_gui_combo(self, text):
