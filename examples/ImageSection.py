@@ -22,7 +22,7 @@ class ImageSection(QWidget):
 
         self.image_shape = "Image"
         self.matrix_array_shape = ("512", "512")
-        self.img_size_in_matrix = ("256", "256")
+        self.img_size_in_matrix = ("128", "128")
 
 
         #for circle and rectangle
@@ -301,7 +301,8 @@ class ImageSection(QWidget):
         else:
             img = Image.open(self.img_path).convert("L")
             array_shape = tuple(map(int, self.matrix_array_shape))
-            img.thumbnail(array_shape,Image.LANCZOS)
+            img_size_matrix = tuple(map(int, self.img_size_in_matrix))
+            img.thumbnail(img_size_matrix,Image.LANCZOS)
             img = np.array(img)
             img = img/img.max()
             img = zero_pad(np.array([img]), array_shape).squeeze()

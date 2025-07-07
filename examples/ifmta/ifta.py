@@ -450,7 +450,7 @@ def PhaDiscretization(image_field,  phase_levels, delta_phase):
     for start, end in segments:
         mid = (start + end) / 2
         mask = (phase >= start) & (phase <= end)
-        phase[mask] = mid*
+        phase[mask] = mid
     
     return phase
 
