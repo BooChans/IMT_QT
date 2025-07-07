@@ -439,7 +439,7 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.
 
 def AmpDiscretization(image_field, amplitude):
     image_amp = np.abs(image_field)
-    image_amp = np.where(image_amp <= amplitude, 1, image_amp)
+    image_amp = np.where(image_amp <= amplitude, image_amp, 1)
     return image_amp
 
 def PhaDiscretization(image_field,  phase_levels, delta_phase):

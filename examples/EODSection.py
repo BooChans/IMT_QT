@@ -34,7 +34,6 @@ class EODSection(QWidget):
         volume = np.ones((512, 512))
         self.volume = np.repeat(volume[np.newaxis, :, :], 1, axis=0)
         self.graph_view = RealTimeCrossSectionViewer(self.volume)
-
         self.setup_ui()
 
     def setup_ui(self):

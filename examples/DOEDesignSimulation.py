@@ -39,7 +39,7 @@ class DOEDesignSimulation(QMainWindow):
         self.image_section = ImageSection()
         self.eod_section = EODSection()
         self.simulation_section = SimulationSection()
-        self.eod_section.graph_view.mode_selector.setCurrentText("Amplitude")
+        self.eod_section.graph_view.mode_selector.setCurrentText("Phase")
 
         self.image_section.graph_widget.slice_view.ui.histogram.hide()
 
@@ -298,8 +298,9 @@ class DOEDesignSimulation(QMainWindow):
         print(phases.shape, "computation done")
         self.eod_section.volume = phases
         self.phases = phases
+        does = np.exp(-1j*phases)
         self.eod_section.graph_view.samplings = float(self.eod_section.sampling) * np.ones((len(phases),))
-        self.eod_section.graph_view.update_data(phases)
+        self.eod_section.graph_view.update_data(does)
         self.doe = phases[-1]
         self.doe = self.doe[np.newaxis, :, :]
 
