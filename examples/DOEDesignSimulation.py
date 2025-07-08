@@ -11,7 +11,7 @@ from ImageSection import ImageSection
 from SimulationSection import SimulationSection
 import sys
 from PIL import Image
-from ifmta.ifta import Ifta
+from ifmta.ifta import Ifta, IftaImproved
 from automatic_sizing import zero_pad
 from ressource_path import resource_path
 import tifffile
@@ -292,7 +292,7 @@ class DOEDesignSimulation(QMainWindow):
 
         print(nlevels, rfact, nbiter_ph1, nbiter_ph2, image_params["image_shape"])
 
-        phases = Ifta(image, image_size=eod_shape, n_iter_ph1= nbiter_ph1, n_iter_ph2= nbiter_ph2, rfact=rfact, n_levels=nlevels, 
+        phases = IftaImproved(image, image_size=eod_shape, n_iter_ph1= nbiter_ph1, n_iter_ph2= nbiter_ph2, rfact=rfact, n_levels=nlevels, 
                       compute_efficiency= compute_efficiency, compute_uniformity = compute_uniformity, seed=seed)
 
         print(phases.shape, "computation done")

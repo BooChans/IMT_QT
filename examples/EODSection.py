@@ -19,7 +19,7 @@ class EODSection(QWidget):
         self.EOD_shape = ("512", "512")
         self.sampling = "1.0"
         self.rfact = "1.2"
-        self.nlevels = "0"
+        self.nlevels = "4"
         self.seed = 0
         self.compute_efficiency = 0
         self.compute_uniformity = 0
@@ -237,7 +237,7 @@ class EODSection(QWidget):
         self.simulation_distance = self.dst_sim_line_edit.text()
         self.sampling = self.sampling_line_edit.text()
         self.graph_view.sampling = float(self.sampling)
-        self.graph_view.update_data(self.volume)
+        self.graph_view.update_data(self.graph_view.volume)
         self.wavelength = self.wavelength_line_edit.text()
         self.tile = self.tile_combo.currentText()
 

@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 
 
-def Ifta(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
+def Ifta(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2=25, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
 
     """
     Ifta : Iterative Fourier Transform Algorithm
@@ -298,7 +298,7 @@ def IftaOverCompensation(target, image_size, *, n_iter = 25, compute_efficiency 
 
 
 
-def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
+def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2 = 25, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
 
     """
     Ifta : Iterative Fourier Transform Algorithm
@@ -379,9 +379,10 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.
     for k in range(n_iter_ph1):
         cont+=1
         holo_field = np.fft.ifft2(np.fft.ifftshift(image_field))  # field ifta = TF-1 field image
+        holo_amp = AmpDiscretization(holo_field, k+1)               # amplitude discretization
         holo_phase = np.angle(holo_field)                         # save ifta phase
         holo_phase_fields[cont] = holo_phase                      # save holo phase from each iteration
-        holo_field = np.exp(holo_phase * 1j)                      # force the module of holo_field to 1 (no losses)
+        holo_field = holo_amp*np.exp(holo_phase * 1j)                      # force the module of holo_field to 1 (no losses)
         image_field = np.fft.fftshift(np.fft.fft2(holo_field))    # field image = TF field ifta
         image_phase = np.angle(image_field)                       # save image phase
         image_amp[image_size[0]//2-target_size[0]//2:image_size[0]//2-target_size[0]//2+target_size[0], 
@@ -402,14 +403,14 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.
     # Second loop - discretized phase screen
 
     if n_levels != 0:
-
+        delta_phases = np.linspace(0, np.pi/n_levels, n_iter_ph2)
         for k in range(n_iter_ph2):
             cont += 1
             holo_field = np.fft.ifft2(np.fft.ifftshift(image_field))  # field ifta = TF-1 field image
-            holo_phase = np.angle(holo_field)                         # get ifta phase. phase values between 0 and 2pi 
-            holo_phase = Discretization(holo_phase, n_levels)         # phase Discretization
-            holo_phase_fields[cont] = holo_phase                     # save holo phase from each iteration
-            holo_field = np.exp(holo_phase * 1j)                      # force the amplitude of the ifta to 1 (no losses)
+            holo_amp = AmpDiscretization(holo_field, 100)             # amplitude discretization
+            holo_phase = PhaDiscretization(holo_field, n_levels, delta_phases[k])      # phase Discretization
+            holo_phase_fields[cont] = holo_phase                      # save holo phase from each iteration
+            holo_field = holo_amp*np.exp(holo_phase * 1j)                      # force the amplitude of the ifta to 1 (no losses)
             image_field = np.fft.fftshift(np.fft.fft2(holo_field))    # image = TF du ifta
             image_phase = np.angle(image_field)                       # save image phase
             image_amp[image_size[0]//2-target_size[0]//2:
@@ -437,22 +438,29 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2, rfact=1.
     return holo_phase_fields
 
 
-def AmpDiscretization(image_field, amplitude):
-    image_amp = np.abs(image_field)
-    image_amp = np.where(image_amp <= amplitude, image_amp, 1)
-    return image_amp
+def AmpDiscretization(holo_field, iter_):
+    holo_amp = np.abs(holo_field)
+    top = holo_amp.max()/(1.2 + 12.0/iter_)
+    holo_amp = np.where(holo_amp <= top, holo_amp/top, 1)
+    return holo_amp
 
-def PhaDiscretization(image_field,  phase_levels, delta_phase):
-    segments = [(phase_levels[i]-delta_phase, phase_levels[i]+delta_phase) for i in range(len(phase_levels))]
-    phase = np.angle(image_field)
-    phase = np.mod(phase, 2*np.pi)
+def PhaDiscretization(holo_field,  n_levels, delta_phase):
 
-    for start, end in segments:
-        mid = (start + end) / 2
-        mask = (phase >= start) & (phase <= end)
-        phase[mask] = mid
-    
-    return phase
+    holo_phase = np.angle(holo_field)
+    holo_pha_wrapped = np.mod(holo_phase, 2*np.pi)
+
+    phanorm = 2*np.pi/n_levels
+    holo_pha = holo_pha_wrapped/phanorm
+
+    holo_pha_int = np.round(holo_pha)
+
+    delta_pha = np.abs(holo_pha - holo_pha_int)
+    delta_phase = delta_phase/phanorm
+    mask = (delta_pha < delta_phase)
+
+    holo_phase[mask] = phanorm * holo_pha_int[mask]
+
+    return holo_phase
 
 if __name__ == "__main__":
     shape = (512, 512)
@@ -464,7 +472,8 @@ if __name__ == "__main__":
     # Random radius with sqrt to ensure uniform distribution in disk
     r = np.sqrt(np.random.rand(10))
     val = r * np.exp(1j * theta)
-    val_crr = AmpDiscretization(val, 0.5)
+    val_crr = AmpDiscretization(val, 1)
+    print(np.abs(val).max()/(1.2+12))
     print(np.abs(val))
     print()
     print(np.abs(val_crr))
