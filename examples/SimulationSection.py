@@ -12,7 +12,7 @@ import sys
 
 from ressource_path import resource_path
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, near_field, angular_spectrum, sweep, sweep_w
+from diffraction_propagation import far_field, near_field, angular_spectrum, sweep, sweep_w, fraunhofer
 from resizing_ import crop_to_signal, format_if_large
 
 
@@ -233,14 +233,21 @@ class SimulationSection(QWidget):
         assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
         U0 = source * aperture
         z_limit = max(U0.shape) * dx**2 / wavelength
-        try:
-            self.volume = far_field(U0, wavelength, z, dx)
+        fraunhofer_limit = (max(U0.shape)*dx)**2/wavelength
+        print(fraunhofer_limit, "fraunhofer limit")
+        if z < fraunhofer_limit:
+            try:
+                self.volume = far_field(U0, wavelength, z, dx)
+                self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
+                self.algo_label.setText(f"Fresnel algorithm for z > zlimit, z limit = {format_if_large(z_limit)} {self.unit_distance}")
+            except:
+                self.volume = angular_spectrum(U0, wavelength, z, dx)
+                self.graph_widget.sampling = dx
+                self.algo_label.setText(f"Near field algorithm for z <= zlimit , z limit = {format_if_large(z_limit)} {self.unit_distance}")
+        else:
+            self.volume = fraunhofer(U0)
             self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
-            self.algo_label.setText(f"Far field algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
-        except:
-            self.volume = angular_spectrum(U0, wavelength, z, dx)
-            self.graph_widget.sampling = dx
-            self.algo_label.setText(f"Near field algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
+            self.algo_label.setText(f"Fraunhofer algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
         try: 
             self.graph_widget.update_data(self.volume)
             self.graph_widget.update_cross_section()

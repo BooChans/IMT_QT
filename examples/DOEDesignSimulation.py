@@ -331,6 +331,7 @@ class DOEDesignSimulation(QMainWindow):
             doe_phase = self.doe
             doe = np.exp(-1j*doe_phase)
             tile = int(eod_params["tile"])
+            print(tile)
             tile_shape = (tile, tile)
             doe = np.tile(doe, tile_shape)
 

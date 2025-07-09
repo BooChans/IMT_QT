@@ -19,17 +19,17 @@ def far_field(U0, wavelength, z, dx):
     k = 2 * np.pi / wavelength
     
     # Calculate output pixel size (pixout)
-    z_limit = N * dx**2 / wavelength
+    z_limit = N * dx**2 / wavelength 
     if abs(z) < z_limit:
         raise ValueError(f"Use near-field method for z < {z_limit:.2f} µm")
-    pixout = wavelength * abs(z) / (N * dx)
+    pixout =  wavelength * abs(z) / (N * dx)
     #print(z_limit, N, dx, wavelength, pixout)
 
     
     # --- Step 1: Pre-FFT quadratic phase (α_in) ---
     x = np.arange(-N//2, N//2) * dx  # Physical coordinates
     X, Y = np.meshgrid(x, x)
-    alpha_in = np.pi * dx**2 / (wavelength * z)
+    alpha_in = np.pi * dx**2 / (wavelength * z) 
     U1 = U0 * np.exp(1j * alpha_in * (X**2 + Y**2))
     
     # --- Step 2: Forward FFT ---
@@ -40,11 +40,11 @@ def far_field(U0, wavelength, z, dx):
     # --- Step 3: Post-FFT quadratic phase (α_out) ---
     fx = np.fft.fftfreq(N, d=dx)  # Frequency grid
     FX, FY = np.meshgrid(fx, fx)
-    alpha_out = np.pi * pixout**2 / (wavelength * z)
+    alpha_out = np.pi * pixout**2 / (wavelength * z) 
     U2 = U1_fft * np.exp(1j * alpha_out * (FX**2 + FY**2))
     
     # Return intensity (multiplied by a coefficient to obtain more consistent intensity values)
-    return U2 * (dx / pixout) 
+    return U2 * (dx / pixout)
 
 def near_field(U0, wavelength, z, dx):
     """
@@ -156,3 +156,5 @@ def sweep_w(U0, z, dx, w_start, w_end, step):
 
     return diffraction_patterns, samplings
 
+def fraunhofer(source):
+    return np.fft.fftshift(np.fft.fft2(source))

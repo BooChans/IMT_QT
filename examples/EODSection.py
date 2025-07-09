@@ -25,7 +25,7 @@ class EODSection(QWidget):
         self.compute_uniformity = 0
 
         self.distance_unit = "µm"
-        self.simulation_distance = "1e6"
+        self.simulation_distance = "1e8"
         self.wavelength = "0.633"
         self.tile = "1"
 
