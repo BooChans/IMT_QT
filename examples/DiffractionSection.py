@@ -63,7 +63,7 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slice_view.getView().addItem(self.line, ignoreBounds=True)
 
         self.cross_section_container = QWidget()
-        cross_layout = QHBoxLayout(self.cross_section_container)
+        cross_layout = QVBoxLayout(self.cross_section_container)
         self.cross_section_plot = pg.PlotWidget()
         cross_layout.addWidget(self.cross_section_plot)
 

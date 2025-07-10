@@ -22,7 +22,6 @@ class ImageSection(QWidget):
 
         self.image_shape = "Image"
         self.matrix_array_shape = ("512", "512")
-        self.img_size_in_matrix = ("128", "128")
 
 
         #for circle and rectangle
@@ -53,7 +52,6 @@ class ImageSection(QWidget):
         self.setup_image_importer()
         self.setup_unit()
         self.setup_matrix_shape()
-        self.setup_img_shape()
         self.setup_offset()
         self.setup_shape() #unused - to remove
         self.setup_shape_dimensions()
@@ -126,32 +124,6 @@ class ImageSection(QWidget):
         self.page_layout.addWidget(self.array_shape_widget)
     
 
-    def setup_img_shape(self):
-
-        self.img_shape_widget = QWidget()
-        self.img_shape_widget_layout = QHBoxLayout(self.img_shape_widget)
-
-        image_shape_label = QLabel("Define the image shape")
-        image_shape = self.img_size_in_matrix
-
-        img_shape_x_label = QLabel("x")
-
-
-        self.h_img_shape_line_edit = QLineEdit()
-        self.h_img_shape_line_edit.setFixedWidth(100)
-        self.h_img_shape_line_edit.setText(image_shape[0])
-
-        self.w_img_shape_line_edit = QLineEdit()
-        self.w_img_shape_line_edit.setFixedWidth(100)
-        self.w_img_shape_line_edit.setText(image_shape[1])
-
-        self.img_shape_widget_layout.addWidget(image_shape_label)
-        self.img_shape_widget_layout.addStretch()
-        self.img_shape_widget_layout.addWidget(self.h_img_shape_line_edit)
-        self.img_shape_widget_layout.addWidget(img_shape_x_label)
-        self.img_shape_widget_layout.addWidget(self.w_img_shape_line_edit)
-
-        self.page_layout.addWidget(self.img_shape_widget)
     
 
     def setup_offset(self):
@@ -249,9 +221,6 @@ class ImageSection(QWidget):
         self.h_size_line_edit.textChanged.connect(self.update_graph)
         self.w_size_line_edit.textChanged.connect(self.update_graph)
 
-        self.w_img_shape_line_edit.textChanged.connect(self.update_graph)
-        self.h_img_shape_line_edit.textChanged.connect(self.update_graph)
-
 
 
     def get_inputs(self):
@@ -260,7 +229,6 @@ class ImageSection(QWidget):
         self.image_size = (self.h_size_line_edit.text(), self.w_size_line_edit.text())
         self.distance_unit = self.unit_combo.currentText()
         self.graph_widget.sampling = float(self.sampling)
-        self.img_size_in_matrix = (self.h_img_shape_line_edit.text(), self.w_img_shape_line_edit.text())
         self.offset_x = self.offset_x_line_edit.text()
         self.offset_y = self.offset_y_line_edit.text()
 
@@ -268,7 +236,6 @@ class ImageSection(QWidget):
             "image_shape" : self.image_shape, #size of elementary shapes : circle/rectangle
             "matrix_array_shape" : self.matrix_array_shape,
             "image_shape_size" : self.image_size,
-            "img_size_in_matrix" : self.img_size_in_matrix,
             "distance_unit" : self.distance_unit,
             "sampling" : self.sampling, 
             "img_path" : self.img_path,
@@ -301,10 +268,9 @@ class ImageSection(QWidget):
         else:
             img = Image.open(self.img_path).convert("L")
             array_shape = tuple(map(int, self.matrix_array_shape))
-            img_size_matrix = tuple(map(int, self.img_size_in_matrix))
-            img.thumbnail(img_size_matrix,Image.LANCZOS)
             img = np.array(img)
             img = img/img.max()
+            assert max(img.shape) <= max(array_shape)
             img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
 
