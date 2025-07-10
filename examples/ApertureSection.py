@@ -24,6 +24,8 @@ class ApertureSection(QWidget):
         self.array_shape = ("512", "512")
         self.aperture_size = ("150","150") 
 
+        self.eod_mode = False
+
 
         #slit shape details
         self.slit_width = "2"
@@ -308,6 +310,9 @@ class ApertureSection(QWidget):
         self.img_import_widget.hide()
         self.page_layout.addWidget(self.img_import_widget)
 
+
+
+
         self.use_img_as_widget = QWidget()
         self.use_img_as_widget_layout = QHBoxLayout(self.use_img_as_widget)
         self.img_amp = QRadioButton("Amplitude")
@@ -319,6 +324,10 @@ class ApertureSection(QWidget):
         self.use_img_as_widget_layout.addWidget(self.img_pha)
 
         self.img_amp.setChecked(True)
+
+        self.eod_mode_checkbox = QCheckBox("EOD")
+        self.eod_mode_checkbox.setChecked(self.eod_mode)
+        self.page_layout.addWidget(self.eod_mode_checkbox)
 
         self.page_layout.addWidget(self.use_img_as_widget)
 
@@ -340,6 +349,7 @@ class ApertureSection(QWidget):
         self.slit_width_line_edit.textChanged.connect(self.update_aperture_graph)
         self.slit_distance_line_edit.textChanged.connect(self.update_aperture_graph)
 
+        self.eod_mode_checkbox.stateChanged.connect(self.update_aperture_graph)
         # Array aperture
         self.matrix_h_line_edit.textChanged.connect(self.update_aperture_graph)
         self.matrix_w_line_edit.textChanged.connect(self.update_aperture_graph)
@@ -366,6 +376,7 @@ class ApertureSection(QWidget):
         self.squ_array_widget.hide()
         self.img_import_widget.hide()
         self.use_img_as_widget.hide()
+        self.eod_mode_checkbox.hide()
 
         # Show only the relevant widgets
         if text == "Elliptic" or text == "Rectangular":  # Fixed condition
@@ -382,6 +393,7 @@ class ApertureSection(QWidget):
         elif text == "Image":
             self.img_import_widget.show()
             self.use_img_as_widget.show()
+            self.eod_mode_checkbox.show()
         self.update_aperture_graph()
 
     def get_inputs(self):
@@ -493,7 +505,7 @@ class ApertureSection(QWidget):
             if self.img_attr == "Amplitude":
                 return img
             else:
-                return np.exp(-1j*img)
+                return np.exp(1j*img)
               
     def update_aperture_graph(self):
         self.sync_attributes_from_widgets()  # sync attributes from widgets before generating aperture
@@ -507,6 +519,7 @@ class ApertureSection(QWidget):
             self.distance_unit = self.unit_combo.currentText()
             self.simulation_distance = self.dst_sim_line_edit.text()
             self.graph_widget.sampling = float(self.sampling)
+            self.eod_mode = True if self.eod_mode_checkbox.isChecked() else False
 
             if self.aperture_shape in ["Elliptic", "Rectangular"]:
                 self.aperture_size = (self.simple_size_h_line_edit.text(), self.simple_size_w_line_edit.text())
@@ -615,7 +628,10 @@ class ApertureSection(QWidget):
             array_shape = tuple(map(int, self.array_shape))
             img.thumbnail(array_shape,Image.LANCZOS)
             img = np.array(img)
-            img = img/img.max()
+            if ext == ".png" and self.eod_mode:
+                img = 2*np.pi/255*img
+            else:
+                img = img/img.max()
             img = zero_pad(np.array([img]), array_shape).squeeze()
         return img
     

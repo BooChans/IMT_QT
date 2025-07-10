@@ -221,6 +221,9 @@ class ImageSection(QWidget):
         self.h_size_line_edit.textChanged.connect(self.update_graph)
         self.w_size_line_edit.textChanged.connect(self.update_graph)
 
+        self.offset_x_line_edit.textChanged.connect(self.sync_offset)
+        self.offset_y_line_edit.textChanged.connect(self.sync_offset)
+
 
 
     def get_inputs(self):
@@ -288,8 +291,62 @@ class ImageSection(QWidget):
         self.graph_widget.sampling = float(self.sampling)
         self.graph_widget.update_data(self.graph_widget.volume)
 
+    def insert_with_offset(self,image, target_shape, offset):
+        """
+        Place `image` inside a zero-padded array of shape `target_shape` with the given `offset`.
+
+        Parameters:
+            image        : np.ndarray, the input image (2D)
+            target_shape : tuple (H, W), the shape of the output array
+            offset       : tuple (row_offset, col_offset), top-left position where image is inserted
+
+        Returns:
+            np.ndarray of shape target_shape with image placed at offset
+        """
+        new_image = np.zeros(target_shape, dtype=image.dtype)
+
+        H, W = target_shape
+        h, w = image.shape
+        off_row, off_col = offset
+
+        # Compute center positions
+        center_row = (H - h) // 2 + off_row
+        center_col = (W - w) // 2 + off_col
+
+        # Compute valid insert ranges
+        row_start = max(center_row, 0)
+        col_start = max(center_col, 0)
+        row_end = min(center_row + h, H)
+        col_end = min(center_col + w, W)
+
+        # Compute crop of input image if partially out of bounds
+        img_row_start = max(0, -center_row)
+        img_col_start = max(0, -center_col)
+        img_row_end = img_row_start + (row_end - row_start)
+        img_col_end = img_col_start + (col_end - col_start)
+
+        # Insert
+        new_image[row_start:row_end, col_start:col_end] = image[img_row_start:img_row_end, img_col_start:img_col_end]
+        return new_image
+
+    def update_with_offset(self):
+        img = self.open_image()
+        target_shape = tuple(map(int,self.matrix_array_shape))
+        offset = tuple(map(int,(self.offset_x, self.offset_y)))
+        new_img = self.insert_with_offset(img,target_shape, offset)
+        return new_img
 
 
+    def update_graph_with_offset(self):
+        print(self.offset_x, self.offset_y)
+        image = self.update_with_offset()
+        self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
+        self.graph_widget.update_data(self.image)
+
+    def sync_offset(self):
+        self.offset_x = self.offset_x_line_edit.text()
+        self.offset_y = self.offset_y_line_edit.text()
+        self.update_graph_with_offset()
         
 if __name__ == "__main__":
     app = QApplication(sys.argv)

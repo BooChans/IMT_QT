@@ -71,7 +71,6 @@ class DOEDesignSimulation(QMainWindow):
         self.setup_rfact()
         self.setup_nbiter_amp()
         self.setup_nbiter_pha()
-        self.setup_npy_importer()
         self.setup_extras() #for efficiency and uniformity, if needed
 
         self.left_layout.addWidget(splitter)
@@ -83,6 +82,7 @@ class DOEDesignSimulation(QMainWindow):
         splitter_.setSizes([1100, 2500])   # Big number to force right widget to take the rest
 
         self.page_layout.addWidget(splitter_)
+        self.simulation_section.hide()
         self.page.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setup_buttons()
         self.setCentralWidget(self.page)
@@ -154,43 +154,12 @@ class DOEDesignSimulation(QMainWindow):
 
 
 
-    def setup_npy_importer(self):
-
-        self.npy_import_widget = QWidget()
-        self.npy_import_widget_layout = QHBoxLayout(self.npy_import_widget)
-
-        file_label = QLabel("Select a seed file")
-
-        self.npy_file_line_edit = QLineEdit()
-        self.npy_file_button = QToolButton()
-
-        icon = self.style().standardIcon(QStyle.SP_DirOpenIcon)
-        self.npy_file_button.setIcon(icon)
-
-        self.npy_import_widget_layout.addWidget(file_label)
-        self.npy_import_widget_layout.addStretch()
-        self.npy_import_widget_layout.addWidget(self.npy_file_line_edit)
-        self.npy_import_widget_layout.addWidget(self.npy_file_button)
-        self.ifta_params_widget_layout.addWidget(self.npy_import_widget, 0, 1)
-
-    def browse_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "NumPy files (*.npy);;All Files (*)"
-        )
-        if file_path:
-            self.npy_file_line_edit.setText(file_path)
-            self.npy_path = file_path
-        else: 
-            self.npy_path = None
-            self.seed = 0
-            self.npy_file_line_edit.setText("")
-
     def save_file(self):
         file_path, selected_filter = QFileDialog.getSaveFileName(
             self,
             "Save File",
             "output.npy",
-            "NumPy files (*.npy);;TIFF files (*.tiff);;All Files (*)"
+            "PNG files (*.png);;NumPy files (*.npy);;TIFF files (*.tiff);;All Files (*)"
         )        
         if file_path:
             if selected_filter.startswith("NumPy"):
@@ -203,8 +172,18 @@ class DOEDesignSimulation(QMainWindow):
                     file_path += ".tiff"
                 if self.phases is not None:
                     tifffile.imwrite(file_path, self.phases[-1])
+            elif selected_filter.startswith("PNG"):
+                if not file_path.endswith(".png"):
+                    file_path += ".png"
+                if self.phases is not None:
+                    doe = self.phases[-1]
+                    doe = np.mod(doe, 2*np.pi)
+                    doe = np.round(255/(2*np.pi)*doe) 
+                    doe = doe.astype(np.uint8)   
+                    doe = Image.fromarray(doe, mode = 'L')
+                    doe.save(file_path)
             else:
-                if not file_path.endswith(".npy") and not file_path.endswith(".tiff"):
+                if not file_path.endswith(".npy") and not file_path.endswith(".tiff") and not file_path.endswith(".png"):
                     raise Exception("Error, please provide the extension of your output file")
                 else:
                     if file_path.endswith(".npy"):
@@ -213,6 +192,13 @@ class DOEDesignSimulation(QMainWindow):
                     if file_path.endswith(".tiff"):                      
                         if self.phases is not None:
                             tifffile.imwrite(file_path, self.phases[-1])
+                    if file_path.endswith(".png"):                      
+                        if self.phases is not None:
+                            doe = self.phases[-1]
+                            doe = np.mod(doe, 2*np.pi)
+                            doe = np.round(255/(2*np.pi)*doe) 
+                            doe = Image.fromarray(doe, mode = 'L')
+                            doe.save(file_path)
             print(f"Saving to {file_path}, data shape: {self.phases[-1].shape if (self.phases is not None and len(self.phases) > 0) else 'None'}")
 
 
@@ -222,7 +208,7 @@ class DOEDesignSimulation(QMainWindow):
         self.buttons_widget = QWidget()
         self.buttons_widget_layout = QHBoxLayout(self.buttons_widget)
 
-        self.sim_button = QPushButton("Run DOE simulation")
+        self.sim_button = QPushButton("Run DOE design")
         self.sim_button.setIcon(QIcon(resource_path("icons/arrows.png")))
         self.sim_button.setIconSize(QSize(24, 24))
 
@@ -247,16 +233,20 @@ class DOEDesignSimulation(QMainWindow):
         self.save_button.setIcon(QIcon(resource_path("icons/floppy-disk.png")))
         self.save_button.setIconSize(QSize(24, 24))
         self.save_button.setStyleSheet(button_style.format(color="blue", hover="#d2f1ff"))
+
+        self.sim_checkbox = QCheckBox("Show Simulation Window")
+        self.sim_checkbox.setChecked(False)
+
         self.save_button.setFixedWidth(220)
         self.buttons_widget_layout.addWidget(self.save_button)
         self.buttons_widget_layout.addStretch()
+        self.buttons_widget_layout.addWidget(self.sim_checkbox)
 
         self.left_layout.addWidget(self.buttons_widget)
 
 
     def setup_connections(self):
         self.sim_button.clicked.connect(self.sim_EOD)        
-        self.npy_file_button.clicked.connect(self.browse_file)
         self.save_button.clicked.connect(self.save_file)
         self.efficiency_checkbox.stateChanged.connect(self.sync_inputs)
         self.uniformity_checkbox.stateChanged.connect(self.sync_inputs)
@@ -268,16 +258,15 @@ class DOEDesignSimulation(QMainWindow):
         self.sim_doe_sweep.clicked.connect(self.run_sweep)
         self.sim_doe_sweep_w.clicked.connect(self.run_sweep_w)
 
+        self.sim_checkbox.stateChanged.connect(self.show_simulation_window)
+        self.eod_section.wavelength_line_edit.editingFinished.connect(self.update_color)
+        self.update_color()
     
     def sim_EOD(self):
         image_params = self.image_section.get_inputs()
 
         eod_params = self.eod_section.get_inputs()
 
-        if self.npy_path:
-            seed = np.load(self.npy_path)
-        else: 
-            seed = 0
 
         eod_shape = tuple(map(int,eod_params["EOD_shape"]))
         image = image_params["image"]
@@ -287,7 +276,7 @@ class DOEDesignSimulation(QMainWindow):
         nbiter_ph2 = int(self.nbiter_ph2)
         compute_efficiency = self.compute_efficiency
         compute_uniformity = self.compute_uniformity
-
+        seed = self.seed
         
 
         print(nlevels, rfact, nbiter_ph1, nbiter_ph2, image_params["image_shape"])
@@ -298,7 +287,7 @@ class DOEDesignSimulation(QMainWindow):
         print(phases.shape, "computation done")
         self.eod_section.volume = phases
         self.phases = phases
-        does = np.exp(-1j*phases)
+        does = np.exp(1j*phases)
         self.eod_section.graph_view.samplings = float(self.eod_section.sampling) * np.ones((len(phases),))
         self.eod_section.graph_view.update_data(does)
         self.doe = phases[-1]
@@ -329,7 +318,7 @@ class DOEDesignSimulation(QMainWindow):
         # 1. Get the aperture mask
             eod_params = self.eod_section.get_inputs()
             doe_phase = self.doe
-            doe = np.exp(-1j*doe_phase)
+            doe = np.exp(1j*doe_phase)
             tile = int(eod_params["tile"])
             print(tile)
             tile_shape = (tile, tile)
@@ -357,7 +346,7 @@ class DOEDesignSimulation(QMainWindow):
         # 1. Get the aperture mask
             eod_params = self.eod_section.get_inputs()
             doe_phase = self.doe
-            doe = np.exp(-1j*doe_phase)
+            doe = np.exp(1j*doe_phase)
             tile = int(eod_params["tile"])
             tile_shape = (tile, tile)
             doe = np.tile(doe, tile_shape)
@@ -385,7 +374,7 @@ class DOEDesignSimulation(QMainWindow):
         # 1. Get the aperture mask
             eod_params = self.eod_section.get_inputs()
             doe_phase = self.doe
-            doe = np.exp(-1j*doe_phase)
+            doe = np.exp(1j*doe_phase)
             doe[np.newaxis, :, :]
             tile = int(eod_params["tile"])
             tile_shape = (tile, tile)
@@ -409,9 +398,72 @@ class DOEDesignSimulation(QMainWindow):
         except Exception as e:
             print(f"Update sweep error : {e}")
 
-
+    def show_simulation_window(self):
+        if self.sim_checkbox.isChecked():
+            self.simulation_section.show()
+        else:
+            self.simulation_section.hide()
         
+    def wavelength_to_rgb(self,wavelength):
+        """
+        Convert a wavelength in nm (380 to 750) to an RGB color.
+        Returns an array [R,G,B] with values 0-255.
+        """
+        gamma = 0.8
+        intensity_max = 1
 
+        if wavelength < 380 or wavelength > 750:
+            return np.array([0, 0, 0], dtype=np.uint8)
+
+        if 380 <= wavelength <= 440:
+            attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
+            R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
+            G = 0.0
+            B = (1.0 * attenuation) ** gamma
+        elif 440 < wavelength <= 490:
+            R = 0.0
+            G = ((wavelength - 440) / (490 - 440)) ** gamma
+            B = 1.0
+        elif 490 < wavelength <= 510:
+            R = 0.0
+            G = 1.0
+            B = (-(wavelength - 510) / (510 - 490)) ** gamma
+        elif 510 < wavelength <= 580:
+            R = ((wavelength - 510) / (580 - 510)) ** gamma
+            G = 1.0
+            B = 0.0
+        elif 580 < wavelength <= 645:
+            R = 1.0
+            G = (-(wavelength - 645) / (645 - 580)) ** gamma
+            B = 0.0
+        else:  # 645 < wavelength <= 750
+            attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
+            R = (1.0 * attenuation) ** gamma
+            G = 0.0
+            B = 0.0
+
+        R = int(max(0, min(1, R)) * 255)
+        G = int(max(0, min(1, G)) * 255)
+        B = int(max(0, min(1, B)) * 255)
+
+        return np.array([R, G, B], dtype=np.uint8)
+    
+    def update_color(self):
+        conversion = {"µm":1e3, "mm": 1e6, "m": 1e9}
+        wavelength = float(self.eod_section.wavelength) 
+        wavelength = wavelength * conversion[self.eod_section.distance_unit]
+        print(wavelength)
+        color = self.wavelength_to_rgb(wavelength)
+
+        R,G,B = color
+
+        lut = np.zeros((256, 3), dtype=np.uint8)
+        lut[:, 0] = np.linspace(0, R, 256)  
+        lut[:, 1] = np.linspace(0, G, 256)  
+        lut[:, 2] = np.linspace(0, B, 256)  
+
+        self.simulation_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+        self.image_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
 
 
 if __name__ == "__main__":
