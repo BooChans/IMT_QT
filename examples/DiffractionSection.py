@@ -20,6 +20,8 @@ class RealTimeCrossSectionViewer(QWidget):
         self.current_slice = 0
         self.sampling = 1.0
         self.samplings = None
+        self.distances = None
+        self.wavelengths = None
         self.unit_distance = "µm"
         self.setup_ui()
         self.add_overlay_scale_bar(pixel_length=10)
@@ -73,9 +75,6 @@ class RealTimeCrossSectionViewer(QWidget):
 
         self.window_info_widget = QLabel(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
         self.layout.addWidget(self.window_info_widget)
-
-        self.layout.addWidget(QLabel("Zoom:"))
-        self.layout.addWidget(self.slider) #Zoom Slider
 
 
         self.toggle_line_cb = QCheckBox("Line Profile")
@@ -167,9 +166,7 @@ class RealTimeCrossSectionViewer(QWidget):
 
     def setup_interaction(self):
         self.line.sigRegionChanged.connect(self.update_cross_section)
-        self.slider.valueChanged.connect(self.update_zoom)
         self.cross_section_plot.scene().sigMouseMoved.connect(self.mouse_moved_on_plot)
-        self.update_zoom(self.slider.value())
         self.update_cross_section()
         self.cursor_line1.sigPositionChanged.connect(self.update_cursor_labels)
         self.cursor_line2.sigPositionChanged.connect(self.update_cursor_labels)
@@ -282,17 +279,6 @@ class RealTimeCrossSectionViewer(QWidget):
                 self.profile_curve.setData(x_physical, profile)
 
 
-    def update_zoom(self, slider_value):
-        zoom_size = self.slider.maximum() - slider_value + self.slider.minimum()
-        h, w = self.volume.shape[1], self.volume.shape[2]
-        center_x, center_y = w // 2, h // 2
-        half = zoom_size // 2
-        self.slice_view.getView().setRange(
-            xRange=(center_x - half, center_x + half),
-            yRange=(center_y - half, center_y + half),
-            padding=0
-        )
-
     def mouse_moved_on_plot(self, pos):
         vb = self.cross_section_plot.getViewBox()
         if not self.cursor_lines_toggle_cb.isChecked():
@@ -369,7 +355,6 @@ class RealTimeCrossSectionViewer(QWidget):
         volume = self.apply_display_mode()
         self.current_slice = 0
         self.slice_view.setImage(volume, xvals=np.arange(volume.shape[0]))
-        print(new_source.shape)
         self.slider_visibility()
         self.update_line()
         self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
@@ -534,14 +519,70 @@ class RealTimeCrossSectionViewer(QWidget):
         else:
             return np.abs(slice)
 
-    def update_line_profile_zoom(self):
-        min_val = self.line_profile_zoom_slider_min.value()
-        max_val = self.line_profile_zoom_slider_max.value()
+    def wavelength_to_rgb(self,wavelength):
+        """
+        Convert a wavelength in nm (380 to 750) to an RGB color.
+        Returns an array [R,G,B] with values 0-255.
+        """
+        if wavelength >= 380 and wavelength <= 750:
+            gamma = 0.8
+            intensity_max = 1
 
-        if min_val >= max_val:
-            return  # avoid invalid range
+            if wavelength < 380 or wavelength > 750:
+                return np.array([0, 0, 0], dtype=np.uint8)
 
-        self.cross_section_plot.setYRange(min_val, max_val)
+            if 380 <= wavelength <= 440:
+                attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
+                R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
+                G = 0.0
+                B = (1.0 * attenuation) ** gamma
+            elif 440 < wavelength <= 490:
+                R = 0.0
+                G = ((wavelength - 440) / (490 - 440)) ** gamma
+                B = 1.0
+            elif 490 < wavelength <= 510:
+                R = 0.0
+                G = 1.0
+                B = (-(wavelength - 510) / (510 - 490)) ** gamma
+            elif 510 < wavelength <= 580:
+                R = ((wavelength - 510) / (580 - 510)) ** gamma
+                G = 1.0
+                B = 0.0
+            elif 580 < wavelength <= 645:
+                R = 1.0
+                G = (-(wavelength - 645) / (645 - 580)) ** gamma
+                B = 0.0
+            else:  # 645 < wavelength <= 750
+                attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
+                R = (1.0 * attenuation) ** gamma
+                G = 0.0
+                B = 0.0
+
+            R = int(max(0, min(1, R)) * 255)
+            G = int(max(0, min(1, G)) * 255)
+            B = int(max(0, min(1, B)) * 255)
+            color = np.array([R, G, B, 1], dtype=np.uint8)
+        else:
+            color = np.array([0, 0, 0, 0])
+        return color
+    
+    def update_color(self, wavelength):
+        conversion = {"µm":1e3, "mm": 1e6, "m": 1e9}
+        wavelength = wavelength * conversion[self.unit_distance]
+        color = self.wavelength_to_rgb(wavelength)
+
+        R,G,B,V = color
+
+        if V == 1:
+            lut = np.zeros((256, 3), dtype=np.uint8)
+            lut[:, 0] = np.linspace(0, R, 256)  
+            lut[:, 1] = np.linspace(0, G, 256)  
+            lut[:, 2] = np.linspace(0, B, 256)  
+
+            self.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+        else: 
+            gray_lut = pg.ColorMap(pos=[0, 1], color=[[0, 0, 0], [255, 255, 255]])
+            self.slice_view.setColorMap(gray_lut)
 
     def on_time_changed(self):
         if len(self.volume) > 1:
@@ -552,7 +593,13 @@ class RealTimeCrossSectionViewer(QWidget):
             self.sampling = self.samplings[idx]
             self.update_cross_section_slice(slice_data)
             self.update_overlay_scale_bar_position()
-            self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+            if self.distances is not None:
+                self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}, Simulation distance = {format_if_large(self.distances[idx])}{self.unit_distance}")
+            elif self.wavelengths is not None:
+                self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}, Wavelength = {format_if_large(self.wavelengths[idx])}{self.unit_distance}")
+                self.update_color(self.wavelengths[idx])
+            else:
+                self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
             self.slice_view.setLevels(lower, upper)
 
 

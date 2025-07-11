@@ -27,8 +27,8 @@ class SimulationSection(QWidget):
         self.end_sweep = "1e4"
         self.step_sweep = "100"
 
-        self.start_sweep_w = "0.450"
-        self.end_sweep_w = "0.950"
+        self.start_sweep_w = "0.380"
+        self.end_sweep_w = "0.750"
         self.step_sweep_w = "0.01"
         self.graph_widget = RealTimeCrossSectionViewer(self.volume)
         self.setup_ui()
@@ -263,7 +263,8 @@ class SimulationSection(QWidget):
             z_step = float(self.step_sweep)
             z_end = float(self.end_sweep)
             print(U0.shape)
-            self.volume, self.graph_widget.samplings = sweep(U0, wavelength, dx, z_start,z_end, z_step)
+            self.volume, self.graph_widget.samplings, self.graph_widget.distances = sweep(U0, wavelength, dx, z_start,z_end, z_step)
+            self.graph_widget.wavelengths = None
         except Exception as e:
             print(f"Update sweep error : {e}")
         self.graph_widget.update_data(self.volume)
@@ -279,7 +280,8 @@ class SimulationSection(QWidget):
             w_start = float(self.start_sweep_w)
             w_step = float(self.step_sweep_w)
             w_end = float(self.end_sweep_w)
-            self.volume, self.graph_widget.samplings = sweep_w(U0, z, dx, w_start, w_end, w_step)
+            self.volume, self.graph_widget.samplings, self.graph_widget.wavelengths = sweep_w(U0, z, dx, w_start, w_end, w_step)
+            self.graph_widget.distances = None
         except Exception as e:
             print(f"Update sweep error : {e}")
         self.graph_widget.update_data(self.volume)

@@ -131,7 +131,7 @@ def sweep(U0, wavelength, dx, z_start, z_end, step):
             diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
 
-    return diffraction_patterns, samplings
+    return diffraction_patterns, samplings, Z
 
 def sweep_w(U0, z, dx, w_start, w_end, step):
     N = max(U0.shape)
@@ -154,7 +154,7 @@ def sweep_w(U0, z, dx, w_start, w_end, step):
             diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
 
-    return diffraction_patterns, samplings
+    return diffraction_patterns, samplings, W
 
 def fraunhofer(source):
     return np.fft.fftshift(np.fft.fft2(source))

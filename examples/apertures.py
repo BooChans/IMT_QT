@@ -31,7 +31,7 @@ def elliptical_aperture(shape=(512,512), size = (300,300), dx = 1.0):
     b = small_diameter / 2
     
     # Equation of ellipse: (X/a)^2 + (Y/b)^2 <= 1
-    aperture = ((X / a)**2 + (Y / b)**2) <= 1
+    aperture = ((X / b)**2 + (Y / a)**2) <= 1
     return aperture.astype(np.float64)
 
 

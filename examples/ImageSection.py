@@ -199,7 +199,7 @@ class ImageSection(QWidget):
 
     def browse_file(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select File", "", "PNG (*.png);; JPEG (*.jpg);; BMP (*.bmp);; TIFF (*.tiff);; PGM (*.pgm) ;;All Files (*)"
+            self, "Select File", "", "Images (*.png *.jpg *.jpeg *.bmp *.tiff *.pgm);;All Files (*)"
         )
         if file_path:
             self.img_file_line_edit.setText(file_path)
@@ -275,7 +275,7 @@ class ImageSection(QWidget):
             img = img/img.max()
             assert max(img.shape) <= max(array_shape)
             img = zero_pad(np.array([img]), array_shape).squeeze()
-        return img
+        return img.T
 
     def update_gui_combo(self, text):
         self.img_import_widget.hide()

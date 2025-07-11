@@ -140,8 +140,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.sweep_button_w.clicked.connect(self.run_sweep_w)
 
         #start : unnecessary connections
-        self.source_section.hdiameter_line_edit.editingFinished.connect(self.update_sampling)
-        self.source_section.wdiameter_line_edit.editingFinished.connect(self.update_sampling)
         self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_sampling)
 
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_sampling)
@@ -170,8 +168,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         
         self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_sampling)
 
-        self.source_section.hdiameter_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.source_section.wdiameter_line_edit.editingFinished.connect(self.update_samlping_input)
         self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_samlping_input)
 
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_samlping_input)
@@ -200,8 +196,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         
         self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_samlping_input)
         
-        self.source_section.hdiameter_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
-        self.source_section.wdiameter_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
         self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
 
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_illumination_of_aperture)
@@ -274,6 +268,7 @@ class OpticalDiffractionSimulator(QMainWindow):
                 aperture = zero_pad(aperture, new_shape)
             # 4. Update simulation
             self.simulation_section.update_diffraction(source, aperture, wavelength, z, dx)
+            self.update_color()
         except Exception as e:
             print(f"Exception in run_simulation: {e}")
     
@@ -488,44 +483,47 @@ class OpticalDiffractionSimulator(QMainWindow):
         Convert a wavelength in nm (380 to 750) to an RGB color.
         Returns an array [R,G,B] with values 0-255.
         """
-        gamma = 0.8
-        intensity_max = 1
+        if wavelength >= 380 and wavelength <= 750:
+            gamma = 0.8
+            intensity_max = 1
 
-        if wavelength < 380 or wavelength > 750:
-            return np.array([0, 0, 0], dtype=np.uint8)
+            if wavelength < 380 or wavelength > 750:
+                return np.array([0, 0, 0], dtype=np.uint8)
 
-        if 380 <= wavelength <= 440:
-            attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
-            R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
-            G = 0.0
-            B = (1.0 * attenuation) ** gamma
-        elif 440 < wavelength <= 490:
-            R = 0.0
-            G = ((wavelength - 440) / (490 - 440)) ** gamma
-            B = 1.0
-        elif 490 < wavelength <= 510:
-            R = 0.0
-            G = 1.0
-            B = (-(wavelength - 510) / (510 - 490)) ** gamma
-        elif 510 < wavelength <= 580:
-            R = ((wavelength - 510) / (580 - 510)) ** gamma
-            G = 1.0
-            B = 0.0
-        elif 580 < wavelength <= 645:
-            R = 1.0
-            G = (-(wavelength - 645) / (645 - 580)) ** gamma
-            B = 0.0
-        else:  # 645 < wavelength <= 750
-            attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
-            R = (1.0 * attenuation) ** gamma
-            G = 0.0
-            B = 0.0
+            if 380 <= wavelength <= 440:
+                attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
+                R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
+                G = 0.0
+                B = (1.0 * attenuation) ** gamma
+            elif 440 < wavelength <= 490:
+                R = 0.0
+                G = ((wavelength - 440) / (490 - 440)) ** gamma
+                B = 1.0
+            elif 490 < wavelength <= 510:
+                R = 0.0
+                G = 1.0
+                B = (-(wavelength - 510) / (510 - 490)) ** gamma
+            elif 510 < wavelength <= 580:
+                R = ((wavelength - 510) / (580 - 510)) ** gamma
+                G = 1.0
+                B = 0.0
+            elif 580 < wavelength <= 645:
+                R = 1.0
+                G = (-(wavelength - 645) / (645 - 580)) ** gamma
+                B = 0.0
+            else:  # 645 < wavelength <= 750
+                attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
+                R = (1.0 * attenuation) ** gamma
+                G = 0.0
+                B = 0.0
 
-        R = int(max(0, min(1, R)) * 255)
-        G = int(max(0, min(1, G)) * 255)
-        B = int(max(0, min(1, B)) * 255)
-
-        return np.array([R, G, B], dtype=np.uint8)
+            R = int(max(0, min(1, R)) * 255)
+            G = int(max(0, min(1, G)) * 255)
+            B = int(max(0, min(1, B)) * 255)
+            color = np.array([R, G, B, 1], dtype=np.uint8)
+        else:
+            color = np.array([0, 0, 0, 0])
+        return color
     
     def update_color(self):
         conversion = {"µm":1e3, "mm": 1e6, "m": 1e9}
@@ -534,16 +532,22 @@ class OpticalDiffractionSimulator(QMainWindow):
         print(wavelength)
         color = self.wavelength_to_rgb(wavelength)
 
-        R,G,B = color
+        R,G,B,V = color
 
-        lut = np.zeros((256, 3), dtype=np.uint8)
-        lut[:, 0] = np.linspace(0, R, 256)  
-        lut[:, 1] = np.linspace(0, G, 256)  
-        lut[:, 2] = np.linspace(0, B, 256)  
+        if V == 1:
+            lut = np.zeros((256, 3), dtype=np.uint8)
+            lut[:, 0] = np.linspace(0, R, 256)  
+            lut[:, 1] = np.linspace(0, G, 256)  
+            lut[:, 2] = np.linspace(0, B, 256)  
 
-        self.source_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
-        self.aperture_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
-        self.simulation_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+            self.source_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+            self.aperture_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+            self.simulation_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+        else: 
+            gray_lut = pg.ColorMap(pos=[0, 1], color=[[0, 0, 0], [255, 255, 255]])
+            self.source_section.graph_widget.slice_view.setColorMap(gray_lut)
+            self.aperture_section.graph_widget.slice_view.setColorMap(gray_lut)
+            self.simulation_section.graph_widget.slice_view.setColorMap(gray_lut)
 
 if __name__ == "__main__":
 

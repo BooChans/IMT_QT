@@ -48,9 +48,16 @@ class ApertureSection(QWidget):
 
         self.aperture = elliptical_aperture(size = tuple(map(int, self.aperture_size)))
         self.aperture = np.repeat(self.aperture[np.newaxis, :, :], 1, axis=0)
-        self.illuminated_aperture = None
         self.graph_widget = RealTimeCrossSectionViewer(self.aperture)
+
+        self.graph_widget.slice_view.ui.roiPlot.hide()
+        self.graph_widget.slice_view.ui.histogram.hide()
+        self.graph_widget.toggle_line_cb.hide()
+
+        #hide display mode widget - display of the volume : intensity, amplitude, phase, log amplitude.
         self.graph_widget.display_widget.hide()
+
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -398,51 +405,7 @@ class ApertureSection(QWidget):
 
     def get_inputs(self):
         """Collect all aperture parameters based on current selection"""
-        self.aperture_shape = self.shape_combo.currentText()
-        self.distance_unit = self.unit_combo.currentText()
-        self.simulation_distance = self.dst_sim_line_edit.text()
-        self.img_path = self.img_file_line_edit.text()
-        # Common aperture size parameters
-        self.aperture_size = (
-            self.simple_size_h_line_edit.text() if self.aperture_shape in ["Elliptic", "Rectangular"] 
-            else self.slit_size_h_line_edit.text(),
-            self.simple_size_w_line_edit.text() if self.aperture_shape in ["Elliptic", "Rectangular"] 
-            else self.slit_size_w_line_edit.text()
-        )
-        
-        # Shape-specific parameters
-        if self.aperture_shape == "Slit":
-            self.slit_width = self.slit_width_line_edit.text()
-            self.slit_distance = self.slit_distance_line_edit.text()
-        elif self.aperture_shape == "Array of ellipses":
-            self.big_diameter = self.hel_bd_line_edit.text()
-            self.small_diameter = self.hel_sd_line_edit.text()
-        elif self.aperture_shape == "Array of rectangles":
-            self.square_size = self.squ_square_size_line_edit.text()
-        
-        # Array parameters (common for both array types)
-        if "array" in self.aperture_shape.lower():
-            self.array_matrix = (
-                self.matrix_h_line_edit.text(),
-                self.matrix_w_line_edit.text()
-            )
-            self.array_spacing = self.matrix_spacing_line_edit.text()
-            Mh = int(self.matrix_h_line_edit.text())
-            Mw = int(self.matrix_w_line_edit.text())
-            spacing = float(self.matrix_spacing_line_edit.text())
-
-            if self.aperture_shape == "Array of rectangles":
-                aperture_size = float(self.squ_square_size_line_edit.text())
-            elif self.aperture_shape == "Array of ellipses":
-                aperture_size = float(self.hel_bd_line_edit.text())
-            else:
-                aperture_size = 0  # fallback if needed
-
-            height = (Mh - 1) * spacing + aperture_size
-            width  = (Mw - 1) * spacing + aperture_size
-
-            self.aperture_size = (str(height), str(width))
-
+        self.update_attributes()
         return {
             "aperture_shape": self.aperture_shape,
             "distance_unit": self.distance_unit,
@@ -508,12 +471,12 @@ class ApertureSection(QWidget):
                 return np.exp(1j*img)
               
     def update_aperture_graph(self):
-        self.sync_attributes_from_widgets()  # sync attributes from widgets before generating aperture
+        self.update_attributes()  # sync attributes from widgets before generating aperture
         aperture = self.generate_aperture()
         self.aperture = np.repeat(aperture[np.newaxis, :, :], 1, axis=0)
         self.graph_widget.update_data(self.aperture)
 
-    def sync_attributes_from_widgets(self):
+    def update_attributes(self):
         try:
             self.aperture_shape = self.shape_combo.currentText()
             self.distance_unit = self.unit_combo.currentText()
@@ -562,53 +525,11 @@ class ApertureSection(QWidget):
         except Exception as e:
             print(f"Exception : {e}")
 
-    def default(self):
-        self.aperture_shape = "Elliptic"
-        self.array_shape = ("512", "512")
-        self.aperture_size = ("150","150") 
 
-
-        #slit shape details
-        self.slit_width = "2"
-        self.slit_distance = "10"
-
-
-        #array aperture details
-        self.array_matrix = ("5","5")
-        self.array_spacing = "20"
-        self.big_diameter = "10"
-        self.small_diameter = "5" 
-        self.square_size = "5"
-
-        self.distance_unit = "µm"
-
-        self.simulation_distance = "1e6" #µm
-        self.sampling = "1.0" #µm
-        
-        self.shape_combo.setCurrentText(self.aperture_shape)
-        self.dst_sim_line_edit.setText(self.simulation_distance)
-        self.shape_combo.setCurrentText(self.aperture_shape)
-        self.simple_size_h_line_edit.setText(self.aperture_size[0])
-        self.simple_size_w_line_edit.setText(self.aperture_size[1])
-        self.slit_width_line_edit.setText(self.slit_width)
-        self.slit_width_line_edit.setText(self.slit_width)
-        self.matrix_spacing_line_edit.setText(self.array_spacing)
-        self.hel_sd_line_edit.setText(self.small_diameter)
-        self.hel_bd_line_edit.setText(self.big_diameter)
-        self.squ_square_size_line_edit.setText(self.square_size)
-
-
-        self.update_aperture_graph()
-
-    def safe_float(self ,value, default=1.0):
-        try:
-            return float(value)
-        except (ValueError, TypeError):
-            return default
         
     def browse_file(self):
         file_path, selected_filter = QFileDialog.getOpenFileName(
-            self, "Select File", "","JPEG (*.jpg);; PNG (*.png);; BMP (*.bmp);; TIFF (*.tiff);; PGM (*.pgm);; NumPy (*.npy);;  All Files (*)"
+            self, "Select File", "", "Images (*.jpg *.jpeg *.png *.bmp *.tiff *.pgm);;NumPy (*.npy);;All Files (*)"
         )
         if file_path:
             self.img_file_line_edit.setText(file_path)
@@ -617,24 +538,33 @@ class ApertureSection(QWidget):
         else: 
             file_path = None
             self.img_file_line_edit.setText("")
+
     def open_image(self):
         ext = os.path.splitext(self.img_path)[1].lower()
+        array_shape = tuple(map(int, self.array_shape))
+
         if ext == ".npy":
             img = np.load(self.img_path)
-        elif ext ==".tiff":
+
+        elif ext == ".tiff":
             img = tifffile.imread(self.img_path)
+            if not self.eod_mode:
+                img = img.T
+
         else:
             img = Image.open(self.img_path).convert("L")
-            array_shape = tuple(map(int, self.array_shape))
-            img.thumbnail(array_shape,Image.LANCZOS)
+            img.thumbnail(array_shape, Image.LANCZOS)
             img = np.array(img)
+
             if ext == ".png" and self.eod_mode:
-                img = 2*np.pi/255*img
+                img = 2 * np.pi / 255 * img
+                # no transpose here!
             else:
-                img = img/img.max()
-            img = zero_pad(np.array([img]), array_shape).squeeze()
+                img = img / img.max()
+                img = zero_pad(np.array([img]), array_shape).squeeze()
+                img = img.T
+
         return img
-    
     
     def use_image_as(self):
         if self.img_amp.isChecked():

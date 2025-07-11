@@ -158,8 +158,8 @@ class DOEDesignSimulation(QMainWindow):
         file_path, selected_filter = QFileDialog.getSaveFileName(
             self,
             "Save File",
-            "output.npy",
-            "PNG files (*.png);;NumPy files (*.npy);;TIFF files (*.tiff);;All Files (*)"
+            "doe_output",
+            "PNG files (*.png);;TIFF files (*.tiff);;NumPy files (*.npy);;All Files (*)"
         )        
         if file_path:
             if selected_filter.startswith("NumPy"):

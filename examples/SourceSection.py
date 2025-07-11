@@ -19,7 +19,6 @@ class SourceSection(QWidget):
         self.source_type = "Plane Wave"
         self.wavelength = "0.633"
         self.beam_shape = "Rectangular"
-        self.size = ("300","300") #not currently in use
         self.distance_unit = "µm"
         self.waist = "300"
         self.sampling = "1.0" #µm 
@@ -29,7 +28,15 @@ class SourceSection(QWidget):
         self.light_source = plane_wave_rectangular(shape=tuple(map(int,self.array_shape)))
         self.light_source = np.repeat(self.light_source[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.light_source)
+        self.graph_widget.update_data(self.light_source)
         self.graph_widget.slice_view.setLevels(0,1)
+
+        #hide histogram and roiPlot
+        self.graph_widget.slice_view.ui.roiPlot.hide()
+        self.graph_widget.slice_view.ui.histogram.hide()
+        self.graph_widget.toggle_line_cb.hide()
+
+        #hide display mode widget - display of the volume : intensity, amplitude, phase, log amplitude.
         self.graph_widget.display_widget.hide()
 
 
@@ -105,49 +112,6 @@ class SourceSection(QWidget):
 
         self.page_layout.addWidget(self.beam_label_widget)
     def setup_beam_shape(self):
-        # Widgets for Plane Wave
-        self.plane_wave_widget = QWidget()
-        self.plane_wave_layout = QVBoxLayout(self.plane_wave_widget)
-        
-        self.plane_wave_shape_widget = QWidget()
-        self.plane_wave_shape_layout = QHBoxLayout(self.plane_wave_shape_widget)
-
-        shape_label = QLabel("Shape")
-
-        self.option_e = QRadioButton("Elliptic")
-        self.option_r = QRadioButton("Rectangular")
-        
-        self.option_r.setChecked(True)  
-
-        self.plane_wave_shape_layout.addWidget(shape_label)
-        self.plane_wave_shape_layout.addStretch()
-        self.plane_wave_shape_layout.addWidget(self.option_e)
-        self.plane_wave_shape_layout.addWidget(self.option_r)
-        
-        self.plane_wave_size_widget = QWidget()
-        self.plane_wave_size_layout = QHBoxLayout(self.plane_wave_size_widget)
-        diameter_label = QLabel("Diameter")
-
-        self.hdiameter_line_edit = QLineEdit()
-        self.hdiameter_line_edit.setFixedWidth(100)
-        self.hdiameter_line_edit.setText(self.size[0])
-        x_label = QLabel("x")
-
-        self.wdiameter_line_edit = QLineEdit()
-        self.wdiameter_line_edit.setFixedWidth(100)     
-        self.wdiameter_line_edit.setText(self.size[1])
-
-        self.plane_wave_size_layout.addWidget(diameter_label)
-        self.plane_wave_size_layout.addStretch()
-        self.plane_wave_size_layout.addWidget(self.hdiameter_line_edit)
-        self.plane_wave_size_layout.addWidget(x_label)
-        self.plane_wave_size_layout.addWidget(self.wdiameter_line_edit)
-
-        #set of widgets removed from final version for students
-        #self.plane_wave_layout.addWidget(self.plane_wave_shape_widget)
-        #self.plane_wave_layout.addWidget(self.plane_wave_size_widget)
-        #self.page_layout.addWidget(self.plane_wave_widget)
-
         # Widgets for Gaussian Beam
         self.gaussian_widget = QWidget()
         self.gaussian_widget_layout = QHBoxLayout(self.gaussian_widget)
@@ -170,24 +134,17 @@ class SourceSection(QWidget):
         self.option1.toggled.connect(self.update_attributes)
         self.option2.toggled.connect(self.update_attributes)
         self.option3.toggled.connect(self.update_attributes)
-        self.option_e.toggled.connect(self.update_attributes)
-        self.option_r.toggled.connect(self.update_attributes)
         self.unit_combo.currentIndexChanged.connect(self.update_attributes)
         self.wavelength_line_edit.textChanged.connect(self.update_attributes)
-        self.hdiameter_line_edit.textChanged.connect(self.update_attributes)
-        self.wdiameter_line_edit.textChanged.connect(self.update_attributes)
         self.beam_waist_line_edit.textChanged.connect(self.update_attributes)
         self.focal_length_line_edit.textChanged.connect(self.update_attributes)
 
         self.option1.toggled.connect(self.update_graph)
         self.option2.toggled.connect(self.update_graph)
         self.option3.toggled.connect(self.update_graph)
-        self.option_e.toggled.connect(self.update_graph)
-        self.option_r.toggled.connect(self.update_graph)
         self.unit_combo.currentIndexChanged.connect(self.update_graph)
         self.wavelength_line_edit.textChanged.connect(self.update_graph)
-        self.hdiameter_line_edit.textChanged.connect(self.update_graph)
-        self.wdiameter_line_edit.textChanged.connect(self.update_graph)
+
         self.beam_waist_line_edit.textChanged.connect(self.update_graph)
         self.focal_length_line_edit.textChanged.connect(self.update_graph)
 
@@ -196,58 +153,40 @@ class SourceSection(QWidget):
 
     def update_beam_widgets(self):
         if self.option1.isChecked():
-            #self.plane_wave_widget.show() deprecated
             self.gaussian_widget.hide()
             self.focal_length_widget.hide()
         elif self.option2.isChecked():
-            #self.plane_wave_widget.hide() deprecated
             self.gaussian_widget.show()
             self.focal_length_widget.hide()
         else:
-            #self.plane_wave_widget.hide() deprecated
             self.gaussian_widget.hide()
             self.focal_length_widget.show()
 
     def update_attributes(self):
-        inputs = self.get_inputs()
         # Update your widget's attributes here:
-        self.focal_length = inputs["focal_length"]
-        self.source_type = inputs["source_type"]
-        self.beam_shape = inputs["beam_shape"]
-        self.distance_unit = inputs["unit"]
-        self.wavelength = inputs["wavelength"]
-        self.size = inputs["size"]
-        self.waist = inputs["beam waist"]
-
-
-    def get_inputs(self):
         if self.option1.isChecked():
             self.source_type = "Plane Wave"
         elif self.option2.isChecked():
             self.source_type = "Gaussian beam"
         else:
             self.source_type = "Converging spherical wave"
-        self.beam_shape = "Elliptic" if self.option_e.isChecked() else "Rectangular"
         self.distance_unit = self.unit_combo.currentText()
         self.wavelength = self.wavelength_line_edit.text()
         self.focal_length = self.focal_length_line_edit.text()
         if self.source_type == "Plane Wave":
-            diameter_h = self.hdiameter_line_edit.text()
-            diameter_w = self.wdiameter_line_edit.text()
-            self.size = (diameter_h, diameter_w)
             self.waist = None
         else:
             beam_waist = self.beam_waist_line_edit.text()
             self.waist = beam_waist
-            self.size = (beam_waist, beam_waist)
 
 
+    def get_inputs(self):
+        self.update_attributes()
         return {
             "source_type": self.source_type,
             "beam_shape": self.beam_shape,
             "unit": self.distance_unit,
             "wavelength": self.wavelength,
-            "size": self.size,
             "beam waist" : self.waist,
             "focal_length" : self.focal_length
         }
@@ -256,21 +195,9 @@ class SourceSection(QWidget):
         self.graph_widget.sampling = float(self.sampling)
         dx = float(self.sampling)  # sampling step, adjust if you want to link to physical unit scaling
         if inputs["source_type"] == "Plane Wave":
-            # Extract physical size from inputs
-            # size = (height, width) in physical units for apertures
-            try:
-                h_size = float(inputs["size"][0])
-                w_size = float(inputs["size"][1])
-            except Exception as e:
-                print("Invalid size input:", e)
-                return
             array_shape = tuple(map(int, self.array_shape))
             shape = array_shape  # Fixed pixel resolution for your grid — can be parameterized
-            assert max(h_size, w_size) < max((dx*shape[0], dx*shape[1]))
-            if inputs["beam_shape"] == "Elliptic":
-                new_source = plane_wave_elliptical(shape=shape, size=(h_size, w_size), dx=dx)
-            else:
-                new_source = plane_wave_rectangular(shape=shape)
+            new_source = plane_wave_rectangular(shape=shape)
 
             # Add batch dimension for compatibility
             new_source = np.expand_dims(new_source, axis=0)
@@ -318,87 +245,72 @@ class SourceSection(QWidget):
         
         self.page_layout.addWidget(self.focal_length_widget)
 
-    def default(self):
-        self.source_type = "Plane Wave"
-        self.wavelength = "0.633"
-        self.beam_shape = "Rectangular"
-        self.size = ("300","300")
-        self.distance_unit = "µm"
-        self.waist = "300"
-        self.sampling = "1.0" #µm*
-        self.array_shape = ("512","512")
-
-        self.unit_combo.setCurrentText(self.distance_unit)
-        self.wavelength_line_edit.setText(self.wavelength)
-        self.option1.setChecked(True) 
-        self.option_r.setChecked(True) 
-        self.hdiameter_line_edit.setText(self.size[0]) 
-        self.wdiameter_line_edit.setText(self.size[1])
-
-
-
-
-        self.update_graph()
 
     def wavelength_to_rgb(self,wavelength):
         """
         Convert a wavelength in nm (380 to 750) to an RGB color.
         Returns an array [R,G,B] with values 0-255.
         """
-        gamma = 0.8
-        intensity_max = 1
+        if wavelength >= 380 and wavelength <= 750:
+            gamma = 0.8
+            intensity_max = 1
 
-        if wavelength < 380 or wavelength > 750:
-            return np.array([0, 0, 0], dtype=np.uint8)
+            if wavelength < 380 or wavelength > 750:
+                return np.array([0, 0, 0], dtype=np.uint8)
 
-        if 380 <= wavelength <= 440:
-            attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
-            R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
-            G = 0.0
-            B = (1.0 * attenuation) ** gamma
-        elif 440 < wavelength <= 490:
-            R = 0.0
-            G = ((wavelength - 440) / (490 - 440)) ** gamma
-            B = 1.0
-        elif 490 < wavelength <= 510:
-            R = 0.0
-            G = 1.0
-            B = (-(wavelength - 510) / (510 - 490)) ** gamma
-        elif 510 < wavelength <= 580:
-            R = ((wavelength - 510) / (580 - 510)) ** gamma
-            G = 1.0
-            B = 0.0
-        elif 580 < wavelength <= 645:
-            R = 1.0
-            G = (-(wavelength - 645) / (645 - 580)) ** gamma
-            B = 0.0
-        else:  # 645 < wavelength <= 750
-            attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
-            R = (1.0 * attenuation) ** gamma
-            G = 0.0
-            B = 0.0
+            if 380 <= wavelength <= 440:
+                attenuation = 0.3 + 0.7 * (wavelength - 380) / (440 - 380)
+                R = ((-(wavelength - 440) / (440 - 380)) * attenuation) ** gamma
+                G = 0.0
+                B = (1.0 * attenuation) ** gamma
+            elif 440 < wavelength <= 490:
+                R = 0.0
+                G = ((wavelength - 440) / (490 - 440)) ** gamma
+                B = 1.0
+            elif 490 < wavelength <= 510:
+                R = 0.0
+                G = 1.0
+                B = (-(wavelength - 510) / (510 - 490)) ** gamma
+            elif 510 < wavelength <= 580:
+                R = ((wavelength - 510) / (580 - 510)) ** gamma
+                G = 1.0
+                B = 0.0
+            elif 580 < wavelength <= 645:
+                R = 1.0
+                G = (-(wavelength - 645) / (645 - 580)) ** gamma
+                B = 0.0
+            else:  # 645 < wavelength <= 750
+                attenuation = 0.3 + 0.7 * (750 - wavelength) / (750 - 645)
+                R = (1.0 * attenuation) ** gamma
+                G = 0.0
+                B = 0.0
 
-        R = int(max(0, min(1, R)) * 255)
-        G = int(max(0, min(1, G)) * 255)
-        B = int(max(0, min(1, B)) * 255)
-
-        return np.array([R, G, B], dtype=np.uint8)
+            R = int(max(0, min(1, R)) * 255)
+            G = int(max(0, min(1, G)) * 255)
+            B = int(max(0, min(1, B)) * 255)
+            color = np.array([R, G, B, 1], dtype=np.uint8)
+        else:
+            color = np.array([0, 0, 0, 0])
+        return color
     
     def update_color(self):
         conversion = {"µm":1e3, "mm": 1e6, "m": 1e9}
         wavelength = float(self.wavelength) 
         wavelength = wavelength * conversion[self.distance_unit]
-        print(wavelength)
         color = self.wavelength_to_rgb(wavelength)
 
-        R,G,B = color
+        R,G,B,V = color
 
-        lut = np.zeros((256, 3), dtype=np.uint8)
-        lut[:, 0] = np.linspace(0, R, 256)  
-        lut[:, 1] = np.linspace(0, G, 256)  
-        lut[:, 2] = np.linspace(0, B, 256)  
+        if V == 1:
+            lut = np.zeros((256, 3), dtype=np.uint8)
+            lut[:, 0] = np.linspace(0, R, 256)  
+            lut[:, 1] = np.linspace(0, G, 256)  
+            lut[:, 2] = np.linspace(0, B, 256)  
 
-        self.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+            self.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+        else: 
+            gray_lut = pg.ColorMap(pos=[0, 1], color=[[0, 0, 0], [255, 255, 255]])
+            self.graph_widget.slice_view.setColorMap(gray_lut)
 
 
 if __name__ == "__main__":
