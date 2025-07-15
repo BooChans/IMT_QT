@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem , QPushButton, QFileDialog, QHBoxLayout,QLineEdit, QToolButton, QStyle, QSizePolicy
+    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem , QPushButton, QFileDialog, QHBoxLayout,QLineEdit, QToolButton, QStyle, QSizePolicy, QProgressBar
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
@@ -9,6 +9,7 @@ import pyqtgraph as pg
 from EODSection import EODSection
 from ImageSection import ImageSection
 from SimulationSection import SimulationSection
+from GenericThread import GenericThread
 import sys
 from PIL import Image
 from ifmta.ifta import Ifta, IftaImproved
@@ -32,6 +33,8 @@ class DOEDesignSimulation(QMainWindow):
 
         self.phases = None
         self.doe = None
+        self.ifta_tread = None
+
         self.resize(2000, 1200)
 
         self.page = QWidget()
@@ -227,7 +230,7 @@ class DOEDesignSimulation(QMainWindow):
 
         self.sim_button.setStyleSheet(button_style.format(color="green", hover="#eaffea"))
         self.sim_button.setFixedWidth(220)
-        self.buttons_widget_layout.addWidget(self.sim_button)
+
 
         self.save_button = QPushButton("Save DOE")
         self.save_button.setIcon(QIcon(resource_path("icons/floppy-disk.png")))
@@ -238,7 +241,31 @@ class DOEDesignSimulation(QMainWindow):
         self.sim_checkbox.setChecked(False)
 
         self.save_button.setFixedWidth(220)
+
+        self.progress = QProgressBar()
+        self.progress.setMinimum = 0
+        self.progress.setMaximum = 100
+        self.progress.setStyleSheet("""
+            QProgressBar {
+                border: 2px solid #CCC;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #00CC66;
+                width: 1px;
+            }
+        """)
+
+        #adding every buttons/widgets on the local widget layout
+        self.buttons_widget_layout.addStretch()
+        self.buttons_widget_layout.addWidget(self.sim_button)
+        self.buttons_widget_layout.addSpacing(10)  # optional spacing
+        self.buttons_widget_layout.addWidget(self.progress)  # optional spacing
+        self.progress.hide()
+        self.buttons_widget_layout.addSpacing(10)
         self.buttons_widget_layout.addWidget(self.save_button)
+        self.buttons_widget_layout.addSpacing(20)  # optional spacing
         self.buttons_widget_layout.addStretch()
         self.buttons_widget_layout.addWidget(self.sim_checkbox)
 
@@ -246,7 +273,8 @@ class DOEDesignSimulation(QMainWindow):
 
 
     def setup_connections(self):
-        self.sim_button.clicked.connect(self.sim_EOD)        
+        self.sim_button.clicked.connect(self.start_sim_EOD)        
+        
         self.save_button.clicked.connect(self.save_file)
         self.efficiency_checkbox.stateChanged.connect(self.sync_inputs)
         self.uniformity_checkbox.stateChanged.connect(self.sync_inputs)
@@ -261,8 +289,9 @@ class DOEDesignSimulation(QMainWindow):
         self.sim_checkbox.stateChanged.connect(self.show_simulation_window)
         self.eod_section.wavelength_line_edit.editingFinished.connect(self.update_color)
         self.update_color()
+
     
-    def sim_EOD(self):
+    def start_sim_EOD(self):
         image_params = self.image_section.get_inputs()
 
         eod_params = self.eod_section.get_inputs()
@@ -277,21 +306,50 @@ class DOEDesignSimulation(QMainWindow):
         compute_efficiency = self.compute_efficiency
         compute_uniformity = self.compute_uniformity
         seed = self.seed
-        
 
         print(nlevels, rfact, nbiter_ph1, nbiter_ph2, image_params["image_shape"])
 
-        phases = IftaImproved(image, image_size=eod_shape, n_iter_ph1= nbiter_ph1, n_iter_ph2= nbiter_ph2, rfact=rfact, n_levels=nlevels, 
-                      compute_efficiency= compute_efficiency, compute_uniformity = compute_uniformity, seed=seed)
+        self.ifta_thread = GenericThread(self.sim_EOD,
+                                        image,
+                                        eod_shape,
+                                        nbiter_ph1,
+                                        nbiter_ph2,
+                                        rfact,
+                                        nlevels,
+                                        compute_efficiency,
+                                        compute_uniformity, 
+                                        seed)
+        self.ifta_thread.progress_changed.connect(self.progress.setValue)
+        self.ifta_thread.finished_with_result.connect(self.on_ifta_done)
 
+        self.progress.show()
+        self.progress.setValue(0)
+
+        # Start thread
+        self.ifta_thread.start()
+
+
+    
+    def sim_EOD(self, image, image_size, n_iter_ph1, n_iter_ph2, rfact, n_levels, 
+                      compute_efficiency, compute_uniformity, seed, callback=None):
+
+
+        phases = IftaImproved(image, image_size=image_size, n_iter_ph1=n_iter_ph1, n_iter_ph2=n_iter_ph2, rfact=rfact, n_levels=n_levels, 
+                      compute_efficiency=compute_efficiency, compute_uniformity=compute_uniformity, seed=seed, callback=callback)
+
+        return phases
+
+    def on_ifta_done(self, phases):
         print(phases.shape, "computation done")
         self.eod_section.volume = phases
         self.phases = phases
-        does = np.exp(1j*phases)
+        does = np.exp(1j * phases)
         self.eod_section.graph_view.samplings = float(self.eod_section.sampling) * np.ones((len(phases),))
-        self.eod_section.graph_view.update_data(does)
         self.doe = phases[-1]
         self.doe = self.doe[np.newaxis, :, :]
+        self.eod_section.graph_view.update_data(np.exp(1j * self.doe))
+        self.progress.hide()
+
 
 
     def sync_inputs(self):
@@ -337,7 +395,7 @@ class DOEDesignSimulation(QMainWindow):
                 source = zero_pad(source, new_shape)
                 doe = zero_pad(doe, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_diffraction(source, doe, wavelength, z, dx)
+            self.simulation_section.update_diffraction(source, doe, wavelength, z, dx, eod = True)
         except Exception as e:
             print(f"Exception in run_simulation: {e}")
     
@@ -463,7 +521,6 @@ class DOEDesignSimulation(QMainWindow):
         lut[:, 2] = np.linspace(0, B, 256)  
 
         self.simulation_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
-        self.image_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
 
 
 if __name__ == "__main__":

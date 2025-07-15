@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
     QSplitter, QLabel, QSlider, QGridLayout, QPushButton, QAction, QMessageBox, QComboBox, QHBoxLayout, QSizePolicy
 )
-from PyQt5.QtCore import Qt, QTimer, QSize
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QPixmap
 import sys
 

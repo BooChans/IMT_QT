@@ -14,6 +14,7 @@ from ressource_path import resource_path
 from DiffractionSection import RealTimeCrossSectionViewer
 from diffraction_propagation import far_field, near_field, angular_spectrum, sweep, sweep_w, fraunhofer
 from resizing_ import crop_to_signal, format_if_large
+from GenericThread import GenericThread
 
 
 class SimulationSection(QWidget):
@@ -228,7 +229,7 @@ class SimulationSection(QWidget):
             "unit": unit
         }
     
-    def update_diffraction(self, source, aperture, wavelength, z, dx):
+    def update_diffraction(self, source, aperture, wavelength, z, dx, eod = False):
 
         assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
         U0 = source * aperture
@@ -249,7 +250,7 @@ class SimulationSection(QWidget):
             self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
             self.algo_label.setText(f"Fraunhofer algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
         try: 
-            self.graph_widget.update_data(self.volume)
+            self.graph_widget.update_data(self.volume, eod=eod)
             self.graph_widget.update_cross_section()
             self.graph_widget.update_cursor_labels()
         except Exception as e:

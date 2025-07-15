@@ -298,7 +298,7 @@ def IftaOverCompensation(target, image_size, *, n_iter = 25, compute_efficiency 
 
 
 
-def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2 = 25, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0):
+def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2 = 25, rfact=1.2, n_levels=0, compute_efficiency=0, compute_uniformity=0, seed=0, callback = None):
 
     """
     Ifta : Iterative Fourier Transform Algorithm
@@ -371,7 +371,7 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2 = 25, rfa
     holo_phase_fields = np.zeros(shape)
     holo_phase_fields[cont] = image_phase   
 
-
+    total = n_iter_ph1 + n_iter_ph2     # Number of operations
 
     image_field = image_amp*np.exp(1j * image_phase)      # Initiate input field
     
@@ -399,6 +399,10 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2 = 25, rfa
             
         if n_levels ==0 and compute_uniformity:
             uniformity[k] = ComputeUniformity(holo_phase, image_amp)
+        
+        if callback:
+            callback(int((cont)/total*100))
+
 
     # Second loop - discretized phase screen
 
@@ -425,6 +429,9 @@ def IftaImproved(target, *, image_size=None, n_iter_ph1=25, n_iter_ph2 = 25, rfa
                 
             if compute_uniformity:
                 uniformity[k] = ComputeUniformity(holo_phase, image_amp)
+        
+            if callback:
+                callback(int((cont)/total*100))
 
     if compute_efficiency and not(compute_uniformity):
         return holo_phase_fields, efficiency

@@ -37,7 +37,7 @@ class ImageSection(QWidget):
 
 
         matrix_size = tuple(map(int, self.matrix_array_shape))
-        image = np.zeros(matrix_size)
+        image = np.ones(matrix_size)
         self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.image)
         self.graph_widget.display_widget.hide()

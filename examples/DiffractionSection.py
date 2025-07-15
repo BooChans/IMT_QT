@@ -350,7 +350,7 @@ class RealTimeCrossSectionViewer(QWidget):
             self.cursor_label.hide()
             self.vline.hide()
             self.hline.hide()
-    def update_data(self, new_source):
+    def update_data(self, new_source, eod = False):
         self.volume = new_source
         volume = self.apply_display_mode()
         self.current_slice = 0
@@ -358,6 +358,11 @@ class RealTimeCrossSectionViewer(QWidget):
         self.slider_visibility()
         self.update_line()
         self.window_info_widget.setText(f"Matrix Size = {self.volume.shape[1]} x {self.volume.shape[2]}, Pixel size = {format_if_large(self.sampling)} {self.unit_distance}")
+        if not eod:
+            lower, upper = np.percentile(volume, [1, 99.98])
+            self.slice_view.setLevels(lower, upper)
+
+
 
     def update_data_ap(self, new_source): #useful only for apertures
         volume = self.apply_display_mode_manual(new_source,"Intensity")
@@ -589,7 +594,7 @@ class RealTimeCrossSectionViewer(QWidget):
             idx = int(self.slice_view.currentIndex)  # current slice index
             slice_data = self.volume[idx][np.newaxis, :]
             slice_data = self.apply_display_mode_slice(slice_data)
-            lower, upper = np.percentile(slice_data, [1, 100])
+            lower, upper = np.percentile(slice_data, [1, 99.98])
             self.sampling = self.samplings[idx]
             self.update_cross_section_slice(slice_data)
             self.update_overlay_scale_bar_position()
