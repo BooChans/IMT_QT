@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, QMetaObject, Qt, Q_ARG
 from ifmta.ifta import IftaImproved
 
 class GenericThread(QThread):
@@ -13,11 +13,14 @@ class GenericThread(QThread):
         self.kwargs = kwargs
 
         def progress_callback(percent):
-            self.progress_changed.emit(percent)
+            QMetaObject.invokeMethod(self, "_emit_progress", Qt.QueuedConnection, Q_ARG(int, int(percent)))
 
         self.kwargs["callback"] = progress_callback
         self.result = None
 
+    @pyqtSlot(int)
+    def _emit_progress(self, val):
+        self.progress_changed.emit(val)
 
     def run(self):
         self.result = self.func(*self.args, **self.kwargs)

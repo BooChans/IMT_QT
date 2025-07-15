@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout, QPushButton
+    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout, QPushButton, QProgressBar
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
@@ -32,6 +32,9 @@ class SimulationSection(QWidget):
         self.end_sweep_w = "0.750"
         self.step_sweep_w = "0.01"
         self.graph_widget = RealTimeCrossSectionViewer(self.volume)
+
+        self.sim_thread = None
+
         self.setup_ui()
         self.setup_connections()
     
@@ -143,6 +146,23 @@ class SimulationSection(QWidget):
         self.sweep_widget_w.hide()
         #self.sweep_w_widget.hide()
 
+        # Create progress bar
+        self.progress = QProgressBar()
+        self.progress.setMinimum = 0
+        self.progress.setMaximum = 100
+        self.progress.setStyleSheet("""
+            QProgressBar {
+                border: 2px solid #CCC;
+                border-radius: 5px;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #00CC66;
+                width: 1px;
+            }
+        """)
+        self.progress.hide()
+
         # Create button
         self.go_button = QPushButton("Run Simulation")
         self.go_button.setIcon(QIcon(resource_path("icons/arrows.png")))
@@ -186,6 +206,7 @@ class SimulationSection(QWidget):
         right_layout.addWidget(self.go_button)
         right_layout.addWidget(self.sweep_button)  # pushes the button to the left
         right_layout.addWidget(self.sweep_button_w)
+        right_layout.addWidget(self.progress)
         right_layout.addStretch()
         # Add this layout to your main layout
         self.widget_layout.addLayout(right_layout)
@@ -256,39 +277,88 @@ class SimulationSection(QWidget):
         except Exception as e:
             print(f"Error : {e}")
 
-    def update_sweep(self, source, aperture, wavelength, dx):
+    def start_update_sweep(self, source, aperture, wavelength, dx):
+        assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
+        U0 = source * aperture
+        z_start = float(self.start_sweep)
+        z_step = float(self.step_sweep)
+        z_end = float(self.end_sweep)
+
+        self.sim_thread = GenericThread(
+            self.update_sweep,
+            U0,
+            wavelength,
+            dx,
+            z_start,
+            z_end,
+            z_step
+        )
+
+        self.sim_thread.progress_changed.connect(self.progress.setValue)
+        self.sim_thread.finished_with_result.connect(self.on_sweep_done)
+
+        self.progress.show()
+        self.progress.setValue(0)
+
+        # Start thread
+        self.sim_thread.start()
+
+    def update_sweep(self, U0, wavelength, dx, z_start, z_end, z_step, callback = None):
         try:
-            assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
-            U0 = source * aperture
-            z_start = float(self.start_sweep)
-            z_step = float(self.step_sweep)
-            z_end = float(self.end_sweep)
-            print(U0.shape)
-            self.volume, self.graph_widget.samplings, self.graph_widget.distances = sweep(U0, wavelength, dx, z_start,z_end, z_step)
+            volume, samplings, distances = sweep(U0, wavelength, dx, z_start,z_end, z_step, callback)
+        except Exception as e:
+            print(f"Update sweep error : {e}")
+        return volume, samplings, distances, "distance"
+
+
+
+    def on_sweep_done(self, result):
+        if result is None:
+            return 
+        if result[3] == "distance":
+            self.volume, self.graph_widget.samplings, self.graph_widget.distances, _ = result
             self.graph_widget.wavelengths = None
-        except Exception as e:
-            print(f"Update sweep error : {e}")
-        self.graph_widget.update_data(self.volume)
-        self.graph_widget.update_cross_section()
-        self.graph_widget.update_cursor_labels()
-        self.graph_widget.on_time_changed()
-
-
-    def update_sweep_w(self, source, aperture, z, dx):
-        try:
-            assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
-            U0 = source * aperture
-            w_start = float(self.start_sweep_w)
-            w_step = float(self.step_sweep_w)
-            w_end = float(self.end_sweep_w)
-            self.volume, self.graph_widget.samplings, self.graph_widget.wavelengths = sweep_w(U0, z, dx, w_start, w_end, w_step)
+        else:
+            self.volume, self.graph_widget.samplings, self.graph_widget.wavelengths, _ = result
             self.graph_widget.distances = None
-        except Exception as e:
-            print(f"Update sweep error : {e}")
         self.graph_widget.update_data(self.volume)
         self.graph_widget.update_cross_section()
         self.graph_widget.update_cursor_labels()
         self.graph_widget.on_time_changed()
+        self.progress.hide()
+
+    def start_update_sweep_w(self, source, aperture, z, dx):
+        assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
+        U0 = source * aperture
+        w_start = float(self.start_sweep_w)
+        w_step = float(self.step_sweep_w)
+        w_end = float(self.end_sweep_w)
+
+        self.sim_thread = GenericThread(
+            self.update_sweep_w,
+            U0,
+            z,
+            dx,
+            w_start,
+            w_end,
+            w_step
+        )
+
+        self.sim_thread.progress_changed.connect(self.progress.setValue)
+        self.sim_thread.finished_with_result.connect(self.on_sweep_done)
+
+        self.progress.show()
+        self.progress.setValue(0)
+
+        # Start thread
+        self.sim_thread.start()
+
+    def update_sweep_w(self, U0, z, dx, w_start, w_end, w_step, callback = None):
+        try:
+            volume, samplings, wavelengths = sweep_w(U0, z, dx, w_start, w_end, w_step, callback)
+        except Exception as e:
+            print(f"Update sweep error : {e}")
+        return volume, samplings, wavelengths, "wavelengths"
 
     
     def pixout(self, source, wavelength, z, dx):

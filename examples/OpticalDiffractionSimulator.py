@@ -295,7 +295,8 @@ class OpticalDiffractionSimulator(QMainWindow):
                 source = zero_pad(source, new_shape)
                 aperture = zero_pad(aperture, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_sweep(source, aperture, wavelength, dx)
+            self.simulation_section.start_update_sweep(source, aperture, wavelength, dx)
+            self.update_color()
         except Exception as e:
             print(f"Sweep error : {e}")
 
@@ -322,7 +323,7 @@ class OpticalDiffractionSimulator(QMainWindow):
                 source = zero_pad(source, new_shape)
                 aperture = zero_pad(aperture, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_sweep_w(source, aperture, z, dx)
+            self.simulation_section.start_update_sweep_w(source, aperture, z, dx)
         except Exception as e:
             print(f"Sweep error : {e}")
 
@@ -425,7 +426,6 @@ class OpticalDiffractionSimulator(QMainWindow):
 
     def expert_mode_enable(self, checked):
         self.expert_mode = checked
-        print("hey bro")
         if checked:
             self.simulation_section.sampling_selection_widget.show()
             self.simulation_section.checkbox_widget.show()
@@ -529,7 +529,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         conversion = {"µm":1e3, "mm": 1e6, "m": 1e9}
         wavelength = float(self.source_section.wavelength) 
         wavelength = wavelength * conversion[self.source_section.distance_unit]
-        print(wavelength)
         color = self.wavelength_to_rgb(wavelength)
 
         R,G,B,V = color

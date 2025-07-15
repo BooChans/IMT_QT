@@ -110,7 +110,7 @@ def angular_spectrum(U0, wavelength, z, dx):
 
     return Uz
 
-def sweep(U0, wavelength, dx, z_start, z_end, step):
+def sweep(U0, wavelength, dx, z_start, z_end, step, callback = None):
     N = max(U0.shape)
     z_limit = N * dx**2 / wavelength
     Z = np.arange(z_start, z_end, step)
@@ -130,10 +130,12 @@ def sweep(U0, wavelength, dx, z_start, z_end, step):
         else:
             diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
+        if callback:
+            callback((int(i+1)/l*100))
 
     return diffraction_patterns, samplings, Z
 
-def sweep_w(U0, z, dx, w_start, w_end, step):
+def sweep_w(U0, z, dx, w_start, w_end, step, callback = None):
     N = max(U0.shape)
     W = np.arange(w_start, w_end, step)
 
@@ -153,6 +155,8 @@ def sweep_w(U0, z, dx, w_start, w_end, step):
         else:
             diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
+        if callback:
+            callback(int((i+1)/l*100))
 
     return diffraction_patterns, samplings, W
 
