@@ -71,8 +71,9 @@ class ImageSection(QWidget):
         self.unit_combo.setCurrentText(self.distance_unit)
 
         self.unit_widget_layout.addWidget(unit_label)
-        self.unit_widget_layout.addStretch()
+        self.unit_widget_layout.addSpacing(20)
         self.unit_widget_layout.addWidget(self.unit_combo)
+        self.unit_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.unit_widget)
     
@@ -89,8 +90,9 @@ class ImageSection(QWidget):
         setup_label = QLabel("Select an image shape")
 
         self.shape_widget_layout.addWidget(setup_label)
-        self.shape_widget_layout.addStretch()
+        self.shape_widget_layout.addSpacing(20)
         self.shape_widget_layout.addWidget(self.combo)
+        self.shape_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.shape_widget)
         self.shape_widget.hide()
@@ -116,10 +118,11 @@ class ImageSection(QWidget):
         self.w_shape_line_edit.setText(array_shape[1])
 
         self.array_shape_widget_layout.addWidget(array_shape_label)
-        self.array_shape_widget_layout.addStretch()
+        self.array_shape_widget_layout.addSpacing(20)
         self.array_shape_widget_layout.addWidget(self.h_shape_line_edit)
         self.array_shape_widget_layout.addWidget(shape_x_label)
         self.array_shape_widget_layout.addWidget(self.w_shape_line_edit)
+        self.array_shape_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.array_shape_widget)
     
@@ -142,9 +145,10 @@ class ImageSection(QWidget):
         self.offset_y_line_edit.setText(self.offset_y)
 
         self.offset_widget_layout.addWidget(offset_label)
-        self.offset_widget_layout.addStretch()
+        self.offset_widget_layout.addSpacing(20)
         self.offset_widget_layout.addWidget(self.offset_x_line_edit)
         self.offset_widget_layout.addWidget(self.offset_y_line_edit)
+        self.offset_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.offset_widget)
         
@@ -169,10 +173,11 @@ class ImageSection(QWidget):
         self.w_size_line_edit.setText(size[1])
 
         self.shape_dimensions_widget_layout.addWidget(dimensions_label)
-        self.shape_dimensions_widget_layout.addStretch()
+        self.shape_dimensions_widget_layout.addSpacing(20)
         self.shape_dimensions_widget_layout.addWidget(self.h_size_line_edit)
         self.shape_dimensions_widget_layout.addWidget(shape_dimensions_x_label)
         self.shape_dimensions_widget_layout.addWidget(self.w_size_line_edit)
+        self.shape_dimensions_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.shape_dimensions_widget)
 
@@ -190,10 +195,10 @@ class ImageSection(QWidget):
         self.img_file_button.setIcon(icon)
 
         self.img_import_widget_layout.addWidget(file_label)
-        self.img_import_widget_layout.addStretch()
+        self.img_import_widget_layout.addSpacing(20)
         self.img_import_widget_layout.addWidget(self.img_file_line_edit)
         self.img_import_widget_layout.addWidget(self.img_file_button)
-        self.img_import_widget.hide()
+        self.img_import_widget_layout.addStretch()
         self.page_layout.addWidget(self.img_import_widget)
     
 

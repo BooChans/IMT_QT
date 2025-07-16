@@ -63,8 +63,9 @@ class EODSection(QWidget):
         self.nlevels_line_edit.setText(self.nlevels)
 
         self.nlevels_widget_layout.addWidget(nlevels_label)
-        self.nlevels_widget_layout.addStretch()
+        self.nlevels_widget_layout.addSpacing(20)
         self.nlevels_widget_layout.addWidget(self.nlevels_line_edit)
+        self.nlevels_widget_layout.addStretch()
 
 
 
@@ -88,10 +89,11 @@ class EODSection(QWidget):
         self.eod_w_shape_line_edit.setText(EOD_shape[1])
 
         self.EOD_widget_layout.addWidget(eod_shape_label)
-        self.EOD_widget_layout.addStretch()
+        self.EOD_widget_layout.addSpacing(20)
         self.EOD_widget_layout.addWidget(self.eod_h_shape_line_edit)
         self.EOD_widget_layout.addWidget(EOD_x_label)
         self.EOD_widget_layout.addWidget(self.eod_w_shape_line_edit)
+        self.EOD_widget_layout.addStretch()
 
 
 
@@ -107,8 +109,9 @@ class EODSection(QWidget):
         self.unit_combo.setCurrentText(self.distance_unit)
 
         self.unit_widget_layout.addWidget(unit_label)
-        self.unit_widget_layout.addStretch()
+        self.unit_widget_layout.addSpacing(20)
         self.unit_widget_layout.addWidget(self.unit_combo)
+        self.unit_widget_layout.addStretch()
 
     
 
@@ -124,8 +127,9 @@ class EODSection(QWidget):
         self.sampling_line_edit.setText(self.sampling)
 
         self.sampling_widget_layout.addWidget(sampling_label)
-        self.sampling_widget_layout.addStretch()
+        self.sampling_widget_layout.addSpacing(20)
         self.sampling_widget_layout.addWidget(self.sampling_line_edit) 
+        self.sampling_widget_layout.addStretch()
 
 
 
@@ -140,8 +144,9 @@ class EODSection(QWidget):
         self.transmittance_combo.setCurrentText(self.transmittance)
 
         self.amp_pha_widget_layout.addWidget(transmittance_label)
-        self.amp_pha_widget_layout.addStretch()
+        self.amp_pha_widget_layout.addSpacing(20)
         self.amp_pha_widget_layout.addWidget(self.transmittance_combo)
+        self.amp_pha_widget_layout.addStretch()
 
 
     def setup_grid(self):

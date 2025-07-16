@@ -110,10 +110,9 @@ class DOEDesignSimulation(QMainWindow):
         self.rfact_line_edit.setText(self.rfact)
 
         self.rfact_widget_layout.addWidget(rfact_label)
-        #self.rfact_widget_layout.addStretch()
+        self.rfact_widget_layout.addSpacing(20)
         self.rfact_widget_layout.addWidget(self.rfact_line_edit)
-        #self.rfact_widget_layout.setStretch(0, 10)
-        #self.rfact_widget_layout.setStretch(1, 3)
+        self.rfact_widget_layout.addStretch()
         self.ifta_params_widget_layout.addWidget(self.rfact_widget, 0, 0)
 
 
@@ -129,10 +128,11 @@ class DOEDesignSimulation(QMainWindow):
         self.nbiter_line_edit.setText(self.nbiter_ph1)
 
         self.nbiter_widget_layout.addWidget(nbiter_label)
-        self.nbiter_widget_layout.addStretch()
+        self.nbiter_widget_layout.addSpacing(20)
         self.nbiter_widget_layout.addWidget(self.nbiter_line_edit)
+        self.nbiter_widget_layout.addStretch()
 
-        self.ifta_params_widget_layout.addWidget(self.nbiter_widget, 1, 0)
+        self.ifta_params_widget_layout.addWidget(self.nbiter_widget, 0, 1)
 
     def setup_nbiter_pha(self):
 
@@ -146,10 +146,11 @@ class DOEDesignSimulation(QMainWindow):
         self.nbiter_pha_line_edit.setText(self.nbiter_ph2)
 
         self.nbiter_pha_widget_layout.addWidget(nbiter_pha_label)
-        self.nbiter_pha_widget_layout.addStretch()
+        self.nbiter_pha_widget_layout.addSpacing(20)
         self.nbiter_pha_widget_layout.addWidget(self.nbiter_pha_line_edit)
+        self.nbiter_pha_widget_layout.addStretch()
 
-        self.ifta_params_widget_layout.addWidget(self.nbiter_pha_widget, 1, 1)
+        self.ifta_params_widget_layout.addWidget(self.nbiter_pha_widget, 0, 2)
 
 
     def setup_extras(self):

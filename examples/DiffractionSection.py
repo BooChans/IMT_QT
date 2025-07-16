@@ -155,8 +155,9 @@ class RealTimeCrossSectionViewer(QWidget):
         self.mode_selector.currentIndexChanged.connect(self.update_display_mode)
         self.mode_selector.currentIndexChanged.connect(self.on_time_changed)
         self.display_widget_layout.addWidget(QLabel("Display Mode:"))
-        self.display_widget_layout.addStretch()
+        self.display_widget_layout.addSpacing(20)
         self.display_widget_layout.addWidget(self.mode_selector)
+        self.display_widget_layout.addStretch()
 
         self.layout.addWidget(self.display_widget)
 

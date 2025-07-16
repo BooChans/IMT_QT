@@ -71,8 +71,9 @@ class SourceSection(QWidget):
 
 
         self.unit_widget_layout.addWidget(label)
+        self.unit_widget_layout.addSpacing(20)
         self.unit_widget_layout.addWidget(self.unit_combo)
-
+        self.unit_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.unit_widget)
     def setup_spec_widget(self):
@@ -86,7 +87,9 @@ class SourceSection(QWidget):
         self.wavelength_line_edit.setFixedWidth(150)
 
         self.spec_widget_layout.addWidget(wavelength_label)
+        self.spec_widget_layout.addSpacing(20)
         self.spec_widget_layout.addWidget(self.wavelength_line_edit)
+        self.spec_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.spec_widget)
     def setup_beam_widget(self):
@@ -103,10 +106,11 @@ class SourceSection(QWidget):
         self.option1.setChecked(True)  
 
 
-        self.beam_label_widget_layout.addStretch()
+        self.beam_label_widget_layout.addSpacing(20)
         self.beam_label_widget_layout.addWidget(self.option1)
         self.beam_label_widget_layout.addWidget(self.option2)
         self.beam_label_widget_layout.addWidget(self.option3)
+        self.beam_label_widget_layout.addStretch()
 
 
 
@@ -116,11 +120,12 @@ class SourceSection(QWidget):
         self.gaussian_widget = QWidget()
         self.gaussian_widget_layout = QHBoxLayout(self.gaussian_widget)
         self.gaussian_widget_layout.addWidget(QLabel("Beam waist"))
-        self.gaussian_widget_layout.addStretch()
+        self.gaussian_widget_layout.addSpacing(20)
         self.beam_waist_line_edit = QLineEdit()
         self.beam_waist_line_edit.setFixedWidth(100)
         self.beam_waist_line_edit.setText(self.waist)
         self.gaussian_widget_layout.addWidget(self.beam_waist_line_edit)
+        self.gaussian_widget_layout.addStretch()
         self.page_layout.addWidget(self.gaussian_widget)
 
         self.page_layout.addWidget(self.gaussian_widget)
@@ -236,9 +241,10 @@ class SourceSection(QWidget):
         self.focal_length_widget_layout = QHBoxLayout(self.focal_length_widget)
 
         self.focal_length_widget_layout.addWidget(QLabel("Focal length"))
-        self.focal_length_widget_layout.addStretch()
+        self.focal_length_widget_layout.addSpacing(20)
         self.focal_length_line_edit = QLineEdit()
         self.focal_length_line_edit.setText(self.focal_length)
+        self.focal_length_widget_layout.addStretch()
         self.focal_length_line_edit.setFixedWidth(100)
 
         self.focal_length_widget_layout.addWidget(self.focal_length_line_edit)

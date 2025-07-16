@@ -84,8 +84,9 @@ class ApertureSection(QWidget):
 
 
         self.unit_widget_layout.addWidget(label)
+        self.unit_widget_layout.addSpacing(20)
         self.unit_widget_layout.addWidget(self.unit_combo)
-
+        self.unit_widget_layout.addStretch()
 
         self.page_layout.addWidget(self.unit_widget)   
 
@@ -100,8 +101,9 @@ class ApertureSection(QWidget):
         self.shape_combo.setCurrentText(self.aperture_shape)
 
         self.shape_widget_layout.addWidget(shape_label)
-        self.shape_widget_layout.addStretch()
+        self.shape_widget_layout.addSpacing(20)
         self.shape_widget_layout.addWidget(self.shape_combo)
+        self.shape_widget_layout.addStretch()
         self.page_layout.addWidget(self.shape_widget)
     def setup_aperture_details(self):
         #Widgets for Elliptical and Square (Simple aperture)
@@ -123,10 +125,11 @@ class ApertureSection(QWidget):
 
 
         self.simple_aperture_widget_layout_.addWidget(simple_label)
-        self.simple_aperture_widget_layout_.addStretch()
+        self.simple_aperture_widget_layout_.addSpacing(20)
         self.simple_aperture_widget_layout_.addWidget(self.simple_size_h_line_edit)
         self.simple_aperture_widget_layout_.addWidget(simple_x_label)
         self.simple_aperture_widget_layout_.addWidget(self.simple_size_w_line_edit)
+        self.simple_aperture_widget_layout_.addStretch()
 
         self.simple_aperture_widget_layout.addWidget(self.simple_aperture_widget_)
         self.page_layout.addWidget(self.simple_aperture_widget)
@@ -152,10 +155,11 @@ class ApertureSection(QWidget):
 
 
         self.slit_size_widget_layout.addWidget(slit_label)
-        self.slit_size_widget_layout.addStretch()
+        self.slit_size_widget_layout.addSpacing(20)
         self.slit_size_widget_layout.addWidget(self.slit_size_h_line_edit)
         self.slit_size_widget_layout.addWidget(slit_x_label)
         self.slit_size_widget_layout.addWidget(self.slit_size_w_line_edit)
+        self.slit_size_widget_layout.addStretch()
 
         self.slit_width_widget = QWidget()
         self.slit_width_widget_layout = QHBoxLayout(self.slit_width_widget)
@@ -174,12 +178,14 @@ class ApertureSection(QWidget):
 
 
         self.slit_width_widget_layout.addWidget(slit_width_label)
-        self.slit_width_widget_layout.addStretch()
+        self.slit_width_widget_layout.addSpacing(20)
         self.slit_width_widget_layout.addWidget(self.slit_width_line_edit)
+        self.slit_width_widget_layout.addStretch()
 
         self.slit_distance_widget_layout.addWidget(slit_distance_label)
-        self.slit_distance_widget_layout.addStretch()
+        self.slit_distance_widget_layout.addSpacing(20)
         self.slit_distance_widget_layout.addWidget(self.slit_distance_line_edit)
+        self.slit_distance_widget_layout.addStretch()
 
         self.slit_aperture_widget_layout.addWidget(self.slit_size_widget)
         self.slit_aperture_widget_layout.addWidget(self.slit_width_widget)
@@ -206,10 +212,11 @@ class ApertureSection(QWidget):
         array_x_label = QLabel("x")
 
         self.array_matrix_widget_layout.addWidget(matrix_label)
-        self.array_matrix_widget_layout.addStretch()
+        self.array_matrix_widget_layout.addSpacing(20)
         self.array_matrix_widget_layout.addWidget(self.matrix_h_line_edit)
         self.array_matrix_widget_layout.addWidget(array_x_label)
         self.array_matrix_widget_layout.addWidget(self.matrix_w_line_edit)
+        self.array_matrix_widget_layout.addStretch()
 
         self.matrix_spacing_widget = QWidget()
         self.matrix_spacing_widget_layout = QHBoxLayout(self.matrix_spacing_widget)
@@ -221,8 +228,9 @@ class ApertureSection(QWidget):
 
 
         self.matrix_spacing_widget_layout.addWidget(matrix_spacing)
-        self.matrix_spacing_widget_layout.addStretch()
+        self.matrix_spacing_widget_layout.addSpacing(20)
         self.matrix_spacing_widget_layout.addWidget(self.matrix_spacing_line_edit)
+        self.matrix_spacing_widget_layout.addStretch()
 
 
         self.array_aperture_widget_layout.addWidget(self.array_matrix_widget)
@@ -250,12 +258,14 @@ class ApertureSection(QWidget):
         self.hel_sd_line_edit.setText(self.small_diameter)
 
         self.hel_bd_widget_layout.addWidget(hel_array_big_diameter)
-        self.hel_bd_widget_layout.addStretch()
+        self.hel_bd_widget_layout.addSpacing(20)
         self.hel_bd_widget_layout.addWidget(self.hel_bd_line_edit)
+        self.hel_bd_widget_layout.addStretch()
 
         self.hel_sd_widget_layout.addWidget(hel_array_small_diameter)
-        self.hel_sd_widget_layout.addStretch()
+        self.hel_sd_widget_layout.addSpacing(20)
         self.hel_sd_widget_layout.addWidget(self.hel_sd_line_edit)
+        self.hel_sd_widget_layout.addStretch()
 
         self.array_aperture_widget_layout.addWidget(self.hel_bd_widget)
         self.array_aperture_widget_layout.addWidget(self.hel_sd_widget)
@@ -272,8 +282,9 @@ class ApertureSection(QWidget):
         self.squ_square_size_line_edit.setText(self.square_size)
 
         self.squ_array_widget_layout.addWidget(squ_label)
-        self.squ_array_widget_layout.addStretch()
+        self.squ_array_widget_layout.addSpacing(20)
         self.squ_array_widget_layout.addWidget(self.squ_square_size_line_edit)
+        self.squ_array_widget_layout.addStretch()
 
         self.array_aperture_widget_layout.addWidget(self.squ_array_widget)
 
@@ -291,9 +302,10 @@ class ApertureSection(QWidget):
         self.img_file_button.setIcon(icon)
 
         self.img_import_widget_layout.addWidget(file_label)
-        self.img_import_widget_layout.addStretch()
+        self.img_import_widget_layout.addSpacing(20)
         self.img_import_widget_layout.addWidget(self.img_file_line_edit)
         self.img_import_widget_layout.addWidget(self.img_file_button)
+        self.img_import_widget_layout.addStretch()
         self.img_import_widget.hide()
         self.page_layout.addWidget(self.img_import_widget)
 
@@ -306,9 +318,10 @@ class ApertureSection(QWidget):
         self.img_pha = QRadioButton("Phase")
 
         self.use_img_as_widget_layout.addWidget(QLabel("Use image as"))
-        self.use_img_as_widget_layout.addStretch()
+        self.use_img_as_widget_layout.addSpacing(20)
         self.use_img_as_widget_layout.addWidget(self.img_amp)
         self.use_img_as_widget_layout.addWidget(self.img_pha)
+        self.use_img_as_widget_layout.addStretch()
 
         self.img_amp.setChecked(True)
 

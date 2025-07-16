@@ -71,8 +71,10 @@ class SimulationSection(QWidget):
         self.wavelength_line_edit.setText(self.wavelength)
 
         self.wavelength_widget_layout.addWidget(wavelength_label)
-        self.wavelength_widget_layout.addStretch()
+        self.wavelength_widget_layout.addSpacing(20)
         self.wavelength_widget_layout.addWidget(self.wavelength_line_edit)
+        self.wavelength_widget_layout.addStretch()
+
 
         self.widget_layout.addWidget(self.wavelength_widget)
 
@@ -83,8 +85,10 @@ class SimulationSection(QWidget):
         self.dst_sim_line_edit.setText(self.simulation_distance)
 
         self.distance_simulation_widget_layout.addWidget(dst_sim_label)
-        self.distance_simulation_widget_layout.addStretch()
+        self.distance_simulation_widget_layout.addSpacing(20)
         self.distance_simulation_widget_layout.addWidget(self.dst_sim_line_edit)
+        self.distance_simulation_widget_layout.addStretch()
+
 
         self.widget_layout.addWidget(self.distance_simulation_widget)  
         
@@ -97,11 +101,14 @@ class SimulationSection(QWidget):
         self.tile_combo.addItems(["1", "2", "4", "8"])
         self.tile_combo.setCurrentText(self.tile)
 
+        
         self.tile_widget_layout.addWidget(tile_label)
-        self.tile_widget_layout.addStretch()
+        self.tile_widget_layout.addSpacing(20)
         self.tile_widget_layout.addWidget(self.tile_combo)
+        self.tile_widget_layout.addStretch()
+
         self.widget_layout.addWidget(self.tile_widget)
-  
+
 
         resolution_label = QLabel("Over-sample output plane")
         self.combo_res = QComboBox()
@@ -109,8 +116,9 @@ class SimulationSection(QWidget):
         self.combo_res.setCurrentText(self.resolution_multiplier)  
 
         self.resolution_widget_layout.addWidget(resolution_label)
-        self.resolution_widget_layout.addStretch()
+        self.resolution_widget_layout.addSpacing(20)
         self.resolution_widget_layout.addWidget(self.combo_res)
+        self.resolution_widget_layout.addStretch()
 
         self.widget_layout.addWidget(self.resolution_widget)
         self.checkbox_widget = QWidget() #alignment
@@ -495,7 +503,6 @@ class SimulationSection(QWidget):
         self.simulation_distance = self.dst_sim_line_edit.text()
         self.wavelength = self.wavelength_line_edit.text()
         self.tile = self.tile_combo.currentText()
-        print(self.tile)
 
 
 

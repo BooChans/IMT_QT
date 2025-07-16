@@ -46,7 +46,7 @@ class OpticalDiffractionSimulator(QMainWindow):
         
         #disabling widgets of the simulation section
         self.simulation_section.wavelength_widget.hide()
-        self.simulation_section.tile_combo.hide()
+        self.simulation_section.tile_widget.hide()
 
         #disable widgets related to expert mode 
         self.simulation_section.sampling_selection_widget.hide()
