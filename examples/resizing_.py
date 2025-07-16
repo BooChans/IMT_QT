@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.ndimage import zoom
-import cv2
 
 
 def bounding_box(mask):
@@ -37,10 +36,13 @@ def format_if_large(value):
         return str(round(value,2))
     
 
+import numpy as np
+from scipy.ndimage import zoom
+
 def resample_and_crop_to_fixed_size(U, current_dx, target_dx, output_shape=(512, 512)):
     """
     Resample a [1, N, N] field to a fixed resolution and output size [1, M, N],
-    using OpenCV for fast resizing.
+    using scipy.ndimage.zoom for resizing.
 
     Args:
         U (np.ndarray): Input field of shape (1, N, N), complex or float.
@@ -56,15 +58,17 @@ def resample_and_crop_to_fixed_size(U, current_dx, target_dx, output_shape=(512,
 
     U2d = U[0]  # Shape: (N, N)
     zoom_factor = current_dx / target_dx
-    new_shape = (int(U2d.shape[1] * zoom_factor), int(U2d.shape[0] * zoom_factor))  # (width, height)
 
-    # Resize using OpenCV (separately for real and imaginary if complex)
+    # Compute zoom factors for height and width (same since square pixels)
+    zoom_factors = (zoom_factor, zoom_factor)
+
+    # Zoom using scipy.ndimage.zoom (separately for real and imaginary if complex)
     if np.iscomplexobj(U2d):
-        U_real = cv2.resize(U2d.real, new_shape, interpolation=cv2.INTER_LINEAR)
-        U_imag = cv2.resize(U2d.imag, new_shape, interpolation=cv2.INTER_LINEAR)
+        U_real = zoom(U2d.real, zoom_factors, order=1)  # order=1: linear interpolation
+        U_imag = zoom(U2d.imag, zoom_factors, order=1)
         U_resampled = U_real + 1j * U_imag
     else:
-        U_resampled = cv2.resize(U2d, new_shape, interpolation=cv2.INTER_LINEAR)
+        U_resampled = zoom(U2d, zoom_factors, order=1)
 
     # Center crop or pad to output_shape
     result = np.zeros(output_shape, dtype=U_resampled.dtype)
