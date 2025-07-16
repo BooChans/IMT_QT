@@ -395,7 +395,7 @@ class DOEDesignSimulation(QMainWindow):
                 source = zero_pad(source, new_shape)
                 doe = zero_pad(doe, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_diffraction(source, doe, wavelength, z, dx, eod = True)
+            self.simulation_section.start_diffraction(source, doe, wavelength, z, dx, eod = True)
         except Exception as e:
             print(f"Exception in run_simulation: {e}")
     
@@ -423,7 +423,7 @@ class DOEDesignSimulation(QMainWindow):
                 source = zero_pad(source, new_shape)
                 doe = zero_pad(doe, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_sweep(source, doe, wavelength, dx)
+            self.simulation_section.start_update_sweep(source, doe, wavelength, dx)
         except Exception as e:
             print(f"Update sweep error : {e}")
 
@@ -452,7 +452,7 @@ class DOEDesignSimulation(QMainWindow):
                 source = zero_pad(source, new_shape)
                 doe = zero_pad(doe, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_sweep_w(source, doe, z, dx)
+            self.simulation_section.start_update_sweep_w(source, doe, z, dx)
         except Exception as e:
             print(f"Update sweep error : {e}")
 

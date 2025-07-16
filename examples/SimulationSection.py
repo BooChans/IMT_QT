@@ -15,6 +15,7 @@ from DiffractionSection import RealTimeCrossSectionViewer
 from diffraction_propagation import far_field, near_field, angular_spectrum, sweep, sweep_w, fraunhofer
 from resizing_ import crop_to_signal, format_if_large
 from GenericThread import GenericThread
+from MessageWorker import MessageWorker
 
 
 class SimulationSection(QWidget):
@@ -211,6 +212,7 @@ class SimulationSection(QWidget):
         # Add this layout to your main layout
         self.widget_layout.addLayout(right_layout)
 
+
     def setup_connections(self):
         self.checkbox.stateChanged.connect(self.update_sampling_input)
         self.combo_res.currentTextChanged.connect(self.update_resolution)
@@ -249,33 +251,56 @@ class SimulationSection(QWidget):
             "sampling": sampling_value,
             "unit": unit
         }
-    
-    def update_diffraction(self, source, aperture, wavelength, z, dx, eod = False):
+
+    def start_diffraction(self, source, aperture, wavelength, z, dx, eod=False):
+        self.diffraction_thread = MessageWorker(
+            self.update_diffraction, source, aperture, wavelength, z, dx, eod
+        )
+        self.diffraction_thread.finished_with_result.connect(lambda res: self.on_diffraction_done(res, eod))
+        self.diffraction_thread.start()
+        c = max(source.shape)
+
+
+    def update_diffraction(self, source, aperture, wavelength, z, dx, eod = False, message_callback = None):
 
         assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
         U0 = source * aperture
-        z_limit = max(U0.shape) * dx**2 / wavelength
-        fraunhofer_limit = (max(U0.shape)*dx)**2/wavelength
-        print(fraunhofer_limit, "fraunhofer limit")
+        N = max(U0.shape)
+        z_limit = N * dx**2 / wavelength
+        fraunhofer_limit = (N * dx)**2 / wavelength
+
+        if message_callback:
+            message_callback(f"Fraunhofer limit: {fraunhofer_limit:.2f} μm")
+
         if z < fraunhofer_limit:
             try:
-                self.volume = far_field(U0, wavelength, z, dx)
-                self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
-                self.algo_label.setText(f"Fresnel algorithm for z > zlimit, z limit = {format_if_large(z_limit)} {self.unit_distance}")
-            except:
-                self.volume = angular_spectrum(U0, wavelength, z, dx)
-                self.graph_widget.sampling = dx
-                self.algo_label.setText(f"Near field algorithm for z <= zlimit , z limit = {format_if_large(z_limit)} {self.unit_distance}")
+                result = far_field(U0, wavelength, z, dx)
+                sampling = wavelength * abs(z) / (N * dx)
+                algo = f"Fresnel algorithm for z > zlimit, z limit = {z_limit:.2f}"
+            except Exception:
+                result = angular_spectrum(U0, wavelength, z, dx)
+                sampling = dx
+                algo = f"Near field algorithm for z <= zlimit , z limit = {z_limit:.2f}"
         else:
-            self.volume = fraunhofer(U0)
-            self.graph_widget.sampling = self.pixout(U0, wavelength, z, dx)
-            self.algo_label.setText(f"Fraunhofer algorithm, z limit = {format_if_large(z_limit)} {self.unit_distance}")
-        try: 
+            result = fraunhofer(U0)
+            sampling = wavelength * abs(z) / (N * dx)
+            algo = f"Fraunhofer algorithm, z limit = {z_limit:.2f}"
+
+        return result, sampling, algo
+    
+    def on_diffraction_done(self, result, eod):
+        volume, sampling, algo_label_text = result
+        self.volume = volume
+        self.graph_widget.sampling = sampling
+        self.algo_label.setText(algo_label_text)
+        
+        try:
             self.graph_widget.update_data(self.volume, eod=eod)
             self.graph_widget.update_cross_section()
             self.graph_widget.update_cursor_labels()
         except Exception as e:
-            print(f"Error : {e}")
+            print(f"Error updating graph: {e}")
+
 
     def start_update_sweep(self, source, aperture, wavelength, dx):
         assert source.shape == aperture.shape, f"Unmatched array shape. Source {source.shape}, Aperture {aperture.shape}."
@@ -403,6 +428,7 @@ class SimulationSection(QWidget):
         self.step_sweep_w = self.step_sweep_w_line_edit.text()
 
         print(self.step_sweep_w, self.start_sweep_w, self.end_sweep_w)
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

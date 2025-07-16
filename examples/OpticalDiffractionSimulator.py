@@ -267,7 +267,7 @@ class OpticalDiffractionSimulator(QMainWindow):
                 source = zero_pad(source, new_shape)
                 aperture = zero_pad(aperture, new_shape)
             # 4. Update simulation
-            self.simulation_section.update_diffraction(source, aperture, wavelength, z, dx)
+            self.simulation_section.start_diffraction(source, aperture, wavelength, z, dx)
             self.update_color()
         except Exception as e:
             print(f"Exception in run_simulation: {e}")
