@@ -41,7 +41,6 @@ class ApertureSection(QWidget):
 
         self.distance_unit = "µm"
 
-        self.simulation_distance = "1e6" #µm
         self.sampling = "1.0" #µm
         self.img_path = None
         self.img_attr = "Amplitude"
@@ -66,7 +65,6 @@ class ApertureSection(QWidget):
         self.page_layout.addWidget(QLabel("Diffracting object"))
         self.page_layout.addWidget(self.graph_widget)
         self.setup_unit_widget()
-        self.setup_simulation_distance()
         self.setup_aperture_shape()
         self.setup_aperture_details()
         self.setup_image_importer()
@@ -90,24 +88,6 @@ class ApertureSection(QWidget):
 
 
         self.page_layout.addWidget(self.unit_widget)   
-    def setup_simulation_distance(self):
-               
-        #Units definition
-        self.distance_simulation_widget = QWidget()
-        self.distance_simulation_widget_layout = QHBoxLayout(self.distance_simulation_widget)
-
-        dst_sim_label = QLabel("Select the simulation distance")
-
-        self.dst_sim_line_edit = QLineEdit()
-        self.dst_sim_line_edit.setFixedWidth(100)
-        self.dst_sim_line_edit.setText(self.simulation_distance)
-
-        self.distance_simulation_widget_layout.addWidget(dst_sim_label)
-        self.distance_simulation_widget_layout.addStretch()
-        self.distance_simulation_widget_layout.addWidget(self.dst_sim_line_edit)
-
-
-        self.page_layout.addWidget(self.distance_simulation_widget)    
 
     def setup_aperture_shape(self):
 
@@ -344,7 +324,6 @@ class ApertureSection(QWidget):
         self.update_aperture_shape_specifications(self.aperture_shape)
 
         self.unit_combo.currentTextChanged.connect(self.update_aperture_graph)
-        self.dst_sim_line_edit.textChanged.connect(self.update_aperture_graph)
 
         # Simple aperture
         self.simple_size_h_line_edit.textChanged.connect(self.update_aperture_graph)
@@ -409,7 +388,6 @@ class ApertureSection(QWidget):
         return {
             "aperture_shape": self.aperture_shape,
             "distance_unit": self.distance_unit,
-            "simulation_distance" : self.simulation_distance,
             "aperture_size": self.aperture_size,
             "slit_width": self.slit_width,
             "slit_distance": self.slit_distance,
@@ -480,7 +458,6 @@ class ApertureSection(QWidget):
         try:
             self.aperture_shape = self.shape_combo.currentText()
             self.distance_unit = self.unit_combo.currentText()
-            self.simulation_distance = self.dst_sim_line_edit.text()
             self.graph_widget.sampling = float(self.sampling)
             self.eod_mode = True if self.eod_mode_checkbox.isChecked() else False
 

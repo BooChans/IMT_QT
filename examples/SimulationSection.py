@@ -32,6 +32,14 @@ class SimulationSection(QWidget):
         self.start_sweep_w = "0.380"
         self.end_sweep_w = "0.750"
         self.step_sweep_w = "0.01"
+
+        self.simulation_distance = "1e6" #µm
+        self.wavelength = "0.633" #µm
+        self.tile = "1"
+
+
+
+
         self.graph_widget = RealTimeCrossSectionViewer(self.volume)
 
         self.sim_thread = None
@@ -46,6 +54,54 @@ class SimulationSection(QWidget):
 
         self.resolution_widget = QWidget()
         self.resolution_widget_layout = QHBoxLayout(self.resolution_widget)
+
+        # Simulation distance definition
+        self.distance_simulation_widget = QWidget()
+        self.distance_simulation_widget_layout = QHBoxLayout(self.distance_simulation_widget)
+
+               
+        #Units definition
+        self.wavelength_widget = QWidget()
+        self.wavelength_widget_layout = QHBoxLayout(self.wavelength_widget)
+
+        wavelength_label = QLabel("Wavelength")
+
+        self.wavelength_line_edit = QLineEdit()
+        self.wavelength_line_edit.setFixedWidth(100)
+        self.wavelength_line_edit.setText(self.wavelength)
+
+        self.wavelength_widget_layout.addWidget(wavelength_label)
+        self.wavelength_widget_layout.addStretch()
+        self.wavelength_widget_layout.addWidget(self.wavelength_line_edit)
+
+        self.widget_layout.addWidget(self.wavelength_widget)
+
+        dst_sim_label = QLabel("Simulation distance")
+
+        self.dst_sim_line_edit = QLineEdit()
+        self.dst_sim_line_edit.setFixedWidth(100)
+        self.dst_sim_line_edit.setText(self.simulation_distance)
+
+        self.distance_simulation_widget_layout.addWidget(dst_sim_label)
+        self.distance_simulation_widget_layout.addStretch()
+        self.distance_simulation_widget_layout.addWidget(self.dst_sim_line_edit)
+
+        self.widget_layout.addWidget(self.distance_simulation_widget)  
+        
+        self.tile_widget = QWidget()
+        self.tile_widget_layout = QHBoxLayout(self.tile_widget)
+
+        tile_label = QLabel("Tiling")
+
+        self.tile_combo = QComboBox()
+        self.tile_combo.addItems(["1", "2", "4", "8"])
+        self.tile_combo.setCurrentText(self.tile)
+
+        self.tile_widget_layout.addWidget(tile_label)
+        self.tile_widget_layout.addStretch()
+        self.tile_widget_layout.addWidget(self.tile_combo)
+        self.widget_layout.addWidget(self.tile_widget)
+  
 
         resolution_label = QLabel("Over-sample output plane")
         self.combo_res = QComboBox()
@@ -212,6 +268,9 @@ class SimulationSection(QWidget):
         # Add this layout to your main layout
         self.widget_layout.addLayout(right_layout)
 
+        self.log_label = QLabel()
+        self.widget_layout.addWidget(self.log_label)
+
 
     def setup_connections(self):
         self.checkbox.stateChanged.connect(self.update_sampling_input)
@@ -227,6 +286,10 @@ class SimulationSection(QWidget):
         self.start_sweep_w_line_edit.editingFinished.connect(self.update_sweep_w_params)
         self.step_sweep_w_line_edit.editingFinished.connect(self.update_sweep_w_params)
         self.end_sweep_w_line_edit.editingFinished.connect(self.update_sweep_w_params)
+
+        self.dst_sim_line_edit.textChanged.connect(self.update_sim_params)
+        self.wavelength_line_edit.textChanged.connect(self.update_sim_params)
+        self.tile_combo.currentTextChanged.connect(self.update_sim_params)
 
     def get_inputs(self):
         """
@@ -259,6 +322,8 @@ class SimulationSection(QWidget):
         self.diffraction_thread.finished_with_result.connect(lambda res: self.on_diffraction_done(res, eod))
         self.diffraction_thread.start()
         c = max(source.shape)
+        if c > 2048:
+            self.log_label.setText(f"Matrix size : {c} x {c} is big, computation may be slow, please wait")
 
 
     def update_diffraction(self, source, aperture, wavelength, z, dx, eod = False, message_callback = None):
@@ -293,6 +358,7 @@ class SimulationSection(QWidget):
         self.volume = volume
         self.graph_widget.sampling = sampling
         self.algo_label.setText(algo_label_text)
+        self.log_label.setText("")
         
         try:
             self.graph_widget.update_data(self.volume, eod=eod)
@@ -420,14 +486,17 @@ class SimulationSection(QWidget):
         self.end_sweep = self.end_sweep_line_edit.text()
         self.step_sweep = self.step_sweep_line_edit.text()
 
-        print(self.step_sweep, self.start_sweep, self.end_sweep)
-
     def update_sweep_w_params(self):
         self.start_sweep_w = self.start_sweep_w_line_edit.text()
         self.end_sweep_w = self.end_sweep_w_line_edit.text()
         self.step_sweep_w = self.step_sweep_w_line_edit.text()
+    
+    def update_sim_params(self):
+        self.simulation_distance = self.dst_sim_line_edit.text()
+        self.wavelength = self.wavelength_line_edit.text()
+        self.tile = self.tile_combo.currentText()
+        print(self.tile)
 
-        print(self.step_sweep_w, self.start_sweep_w, self.end_sweep_w)
 
 
 if __name__ == "__main__":

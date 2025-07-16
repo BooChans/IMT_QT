@@ -44,6 +44,10 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.aperture_section = ApertureSection()
         self.simulation_section = SimulationSection()
         
+        #disabling widgets of the simulation section
+        self.simulation_section.wavelength_widget.hide()
+        self.simulation_section.tile_combo.hide()
+
         #disable widgets related to expert mode 
         self.simulation_section.sampling_selection_widget.hide()
         self.simulation_section.checkbox_widget.hide()
@@ -145,9 +149,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_sampling)
         self.aperture_section.unit_combo.currentTextChanged.connect(self.update_sampling)
 
-        # Line edits for simulation distance
-        self.aperture_section.dst_sim_line_edit.editingFinished.connect(self.update_sampling)
-
         # Simple aperture size line edits
         self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_sampling)
         self.aperture_section.simple_size_w_line_edit.editingFinished.connect(self.update_sampling)
@@ -173,9 +174,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_samlping_input)
         self.aperture_section.unit_combo.currentTextChanged.connect(self.update_samlping_input)
 
-        # Line edits for simulation distance
-        self.aperture_section.dst_sim_line_edit.editingFinished.connect(self.update_samlping_input)
-
         # Simple aperture size line edits
         self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_samlping_input)
         self.aperture_section.simple_size_w_line_edit.editingFinished.connect(self.update_samlping_input)
@@ -200,9 +198,6 @@ class OpticalDiffractionSimulator(QMainWindow):
 
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_illumination_of_aperture)
         self.aperture_section.unit_combo.currentTextChanged.connect(self.update_illumination_of_aperture)
-
-        # Line edits for simulation distance
-        self.aperture_section.dst_sim_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
 
         # Simple aperture size line edits
         self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
@@ -256,7 +251,7 @@ class OpticalDiffractionSimulator(QMainWindow):
 
             # 3. Get wavelength, distance, pixel size
             wavelength = float(source_params['wavelength'])
-            z = float(aperture_params["simulation_distance"])
+            z = float(self.simulation_section.simulation_distance)
             assert self.source_section.sampling == self.aperture_section.sampling
             dx = float(self.source_section.sampling)   
             assert max(aperture.shape) == max(source.shape)
@@ -284,7 +279,6 @@ class OpticalDiffractionSimulator(QMainWindow):
 
             # 3. Get wavelength, distance, pixel size
             wavelength = float(source_params['wavelength'])
-            z = float(aperture_params["simulation_distance"])
             assert self.source_section.sampling == self.aperture_section.sampling
             dx = float(self.source_section.sampling)   
             assert max(aperture.shape) == max(source.shape)
@@ -311,8 +305,7 @@ class OpticalDiffractionSimulator(QMainWindow):
             source = self.source_section.light_source
 
             # 3. Get wavelength, distance, pixel size
-            wavelength = float(source_params['wavelength'])
-            z = float(aperture_params["simulation_distance"])
+            z = float(self.simulation_section.simulation_distance)
             assert self.source_section.sampling == self.aperture_section.sampling
             dx = float(self.source_section.sampling)   
             assert max(aperture.shape) == max(source.shape)

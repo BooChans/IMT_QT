@@ -25,9 +25,6 @@ class EODSection(QWidget):
         self.compute_uniformity = 0
 
         self.distance_unit = "µm"
-        self.simulation_distance = "1e8"
-        self.wavelength = "0.633"
-        self.tile = "1"
 
         self.transmittance = "Phase"
 
@@ -44,10 +41,7 @@ class EODSection(QWidget):
 
         self.setup_unit()
         self.setup_nlevels()
-        self.setup_simulation_distance()
-        self.setup_wavelength()
         self.setup_sampling()
-        self.setup_tile()
         self.setup_EOD_widget()
         self.setup_amp_pha()
 
@@ -116,38 +110,7 @@ class EODSection(QWidget):
         self.unit_widget_layout.addStretch()
         self.unit_widget_layout.addWidget(self.unit_combo)
 
-
-    def setup_wavelength(self):
-               
-        #Units definition
-        self.wavelength_widget = QWidget()
-        self.wavelength_widget_layout = QHBoxLayout(self.wavelength_widget)
-
-        wavelength_label = QLabel("Wavelength")
-
-        self.wavelength_line_edit = QLineEdit()
-        self.wavelength_line_edit.setFixedWidth(100)
-        self.wavelength_line_edit.setText(self.wavelength)
-
-        self.wavelength_widget_layout.addWidget(wavelength_label)
-        self.wavelength_widget_layout.addStretch()
-        self.wavelength_widget_layout.addWidget(self.wavelength_line_edit)
-
     
-    def setup_simulation_distance(self):
-        #Units definition
-        self.distance_simulation_widget = QWidget()
-        self.distance_simulation_widget_layout = QHBoxLayout(self.distance_simulation_widget)
-
-        dst_sim_label = QLabel("Simulation distance")
-
-        self.dst_sim_line_edit = QLineEdit()
-        self.dst_sim_line_edit.setFixedWidth(100)
-        self.dst_sim_line_edit.setText(self.simulation_distance)
-
-        self.distance_simulation_widget_layout.addWidget(dst_sim_label)
-        self.distance_simulation_widget_layout.addStretch()
-        self.distance_simulation_widget_layout.addWidget(self.dst_sim_line_edit)
 
 
     def setup_sampling(self):
@@ -187,59 +150,21 @@ class EODSection(QWidget):
 
         self.params_widget_layout.addWidget(self.unit_widget, 0, 0)
         self.params_widget_layout.addWidget(self.sampling_widget, 1, 0)      
-        self.params_widget_layout.addWidget(self.wavelength_widget, 2, 0)
-        self.params_widget_layout.addWidget(self.distance_simulation_widget, 3, 0)
 
         self.params_widget_layout.addWidget(self.EOD_widget, 0, 1)
         self.params_widget_layout.addWidget(self.nlevels_widget, 1, 1)
-        self.params_widget_layout.addWidget(self.amp_pha_widget, 2, 1)
-        self.params_widget_layout.addWidget(self.tile_widget, 3, 1)
+        self.params_widget_layout.addWidget(self.amp_pha_widget, 2, 0)
 
         self.page_layout.addWidget(self.params_widget)
-
-
-
-    def run_eod_propagation(self):
-        try:
-            print("in the try of the sim") 
-            U0 = np.exp(-1j*self.volume[-1])
-            tile = int(self.tile)
-            tile_shape = (tile, tile)
-            U0 = np.tile(U0, tile_shape)
-            z = float(self.simulation_distance)
-            dx = float(self.sampling)
-            wavelength = float(self.wavelength)
-            try:
-                volume = far_field(U0, z, dx, wavelength)
-                sampling = self.pixout(U0, wavelength, z, dx)
-            except:
-                volume = angular_spectrum(U0, z, dx, wavelength)
-                sampling = dx
-            self.graph_view.sampling = float(self.sampling)
-            print(self.sampling, "sampling")
-            print(volume.shape)
-            if len(volume.shape) != 3:
-                volume = np.repeat(volume[np.newaxis, :, :], 1, 0)
-            init_volume = np.zeros_like(volume)
-            self.result_window = RealTimeCrossSectionViewer(init_volume)
-            self.result_window.sampling = sampling
-            self.result_window.update_data(volume)
-            self.result_window.setWindowTitle("EOD Propagation")
-            self.result_window.show()
-        except Exception as e:
-            print(f"Error in the setup : {e}")
 
 
         
     def sync_inputs(self):
         self.nlevels = self.nlevels_line_edit.text()
         self.distance_unit = self.unit_combo.currentText()
-        self.simulation_distance = self.dst_sim_line_edit.text()
         self.sampling = self.sampling_line_edit.text()
         self.graph_view.sampling = float(self.sampling)
         self.graph_view.update_data(self.graph_view.volume)
-        self.wavelength = self.wavelength_line_edit.text()
-        self.tile = self.tile_combo.currentText()
 
         eod_h = self.eod_h_shape_line_edit.text()
         eod_w = self.eod_w_shape_line_edit.text()
@@ -255,38 +180,18 @@ class EODSection(QWidget):
             "EOD_shape" : self.EOD_shape, 
             "nlevels" : self.nlevels, 
             "distance_unit" : self.distance_unit,
-            "wavelength" : self.wavelength,
-            "simulation_distance" : self.simulation_distance,
             "sampling" : self.sampling,
             "volume" : self.volume,
-            "tile" :  self.tile,
             "transmittance" : self.transmittance
         }
-
-    def setup_tile(self):
-        self.tile_widget = QWidget()
-        self.tile_widget_layout = QHBoxLayout(self.tile_widget)
-
-        tile_label = QLabel("Tiling")
-
-        self.tile_combo = QComboBox()
-        self.tile_combo.addItems(["1", "2", "4", "8"])
-        self.tile_combo.setCurrentText(self.tile)
-
-        self.tile_widget_layout.addWidget(tile_label)
-        self.tile_widget_layout.addStretch()
-        self.tile_widget_layout.addWidget(self.tile_combo)
 
 
     def setup_connections(self):
 
 
         self.nlevels_line_edit.textChanged.connect(self.sync_inputs)
-        self.dst_sim_line_edit.textChanged.connect(self.sync_inputs)
         self.sampling_line_edit.textChanged.connect(self.sync_inputs)
-        self.wavelength_line_edit.textChanged.connect(self.sync_inputs)
         self.unit_combo.currentTextChanged.connect(self.sync_inputs)
-        self.tile_combo.currentTextChanged.connect(self.sync_inputs)
 
         self.eod_h_shape_line_edit.textChanged.connect(self.sync_inputs)
         self.eod_w_shape_line_edit.textChanged.connect(self.sync_inputs)

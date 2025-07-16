@@ -42,6 +42,12 @@ class DOEDesignSimulation(QMainWindow):
         self.image_section = ImageSection()
         self.eod_section = EODSection()
         self.simulation_section = SimulationSection()
+        
+        # Simulation distance preset
+
+        self.simulation_section.simulation_distance = "1e8"
+        self.simulation_section.dst_sim_line_edit.setText(self.simulation_section.simulation_distance)
+
         self.eod_section.graph_view.mode_selector.setCurrentText("Phase")
 
         self.image_section.graph_widget.slice_view.ui.histogram.hide()
@@ -287,7 +293,7 @@ class DOEDesignSimulation(QMainWindow):
         self.sim_doe_sweep_w.clicked.connect(self.run_sweep_w)
 
         self.sim_checkbox.stateChanged.connect(self.show_simulation_window)
-        self.eod_section.wavelength_line_edit.editingFinished.connect(self.update_color)
+        self.simulation_section.wavelength_line_edit.editingFinished.connect(self.update_color)
         self.update_color()
 
     
@@ -377,7 +383,7 @@ class DOEDesignSimulation(QMainWindow):
             eod_params = self.eod_section.get_inputs()
             doe_phase = self.doe
             doe = np.exp(1j*doe_phase)
-            tile = int(eod_params["tile"])
+            tile = int(self.simulation_section.tile)
             print(tile)
             tile_shape = (tile, tile)
             doe = np.tile(doe, tile_shape)
@@ -385,8 +391,8 @@ class DOEDesignSimulation(QMainWindow):
             source = np.ones_like(doe)
 
             # 3. Get wavelength, distance, pixel size
-            wavelength = float(eod_params['wavelength'])
-            z = float(eod_params["simulation_distance"])
+            wavelength = float(self.simulation_section.wavelength)
+            z = float(self.simulation_section.simulation_distance)
             dx = float(eod_params["sampling"])   
             N_win =  max(doe.shape)
             N_target = int(self.simulation_section.resolution_multiplier) * N_win
@@ -405,7 +411,7 @@ class DOEDesignSimulation(QMainWindow):
             eod_params = self.eod_section.get_inputs()
             doe_phase = self.doe
             doe = np.exp(1j*doe_phase)
-            tile = int(eod_params["tile"])
+            tile = int(self.simulation_section.tile)
             tile_shape = (tile, tile)
             doe = np.tile(doe, tile_shape)
 
@@ -413,8 +419,7 @@ class DOEDesignSimulation(QMainWindow):
             source = np.ones_like(doe)
 
             # 3. Get wavelength, distance, pixel size
-            wavelength = float(eod_params['wavelength'])
-            z = float(eod_params["simulation_distance"])
+            wavelength = float(self.simulation_section.wavelength)
             dx = float(eod_params["sampling"])   
             N_win =  max(doe.shape)
             N_target = int(self.simulation_section.resolution_multiplier) * N_win
@@ -434,7 +439,7 @@ class DOEDesignSimulation(QMainWindow):
             doe_phase = self.doe
             doe = np.exp(1j*doe_phase)
             doe[np.newaxis, :, :]
-            tile = int(eod_params["tile"])
+            tile = int(self.simulation_section.tile)
             tile_shape = (tile, tile)
             doe = np.tile(doe, tile_shape)
 
@@ -442,8 +447,7 @@ class DOEDesignSimulation(QMainWindow):
             source = np.ones_like(doe)
 
             # 3. Get wavelength, distance, pixel size
-            wavelength = float(eod_params['wavelength'])
-            z = float(eod_params["simulation_distance"])
+            z = float(self.simulation_section.simulation_distance)
             dx = float(eod_params["sampling"])   
             N_win =  max(doe.shape)
             N_target = int(self.simulation_section.resolution_multiplier) * N_win
@@ -508,7 +512,7 @@ class DOEDesignSimulation(QMainWindow):
     
     def update_color(self):
         conversion = {"µm":1e3, "mm": 1e6, "m": 1e9}
-        wavelength = float(self.eod_section.wavelength) 
+        wavelength = float(self.simulation_section.wavelength) 
         wavelength = wavelength * conversion[self.eod_section.distance_unit]
         print(wavelength)
         color = self.wavelength_to_rgb(wavelength)
