@@ -1,6 +1,7 @@
 import numpy as np 
+from resizing_ import resample_and_crop_to_fixed_size
 
-
+ 
 def far_field(U0, wavelength, z, dx):
     """
     Original far-field diffraction (ZL-TF-ZL method).
@@ -128,8 +129,11 @@ def sweep(U0, wavelength, dx, z_start, z_end, step, callback = None):
             diffraction_patterns[i] = angular_spectrum(U0, wavelength, z, dx)
             samplings[i] = dx 
         else:
-            diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
+            diffraction_pattern = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
+            #diffraction_pattern = resample_and_crop_to_fixed_size(diffraction_pattern, samplings[i], dx, (h,w))
+            #samplings[i] = 1.0
+            diffraction_patterns[i] = diffraction_pattern
         if callback:
             callback((int(i+1)/l*100))
 
@@ -162,3 +166,4 @@ def sweep_w(U0, z, dx, w_start, w_end, step, callback = None):
 
 def fraunhofer(source):
     return np.fft.fftshift(np.fft.fft2(source))
+

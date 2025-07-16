@@ -163,21 +163,26 @@ class SimulationSection(QWidget):
         self.sweep_widget_layout = QHBoxLayout(self.sweep_widget)
 
         self.sweep_widget_layout.addWidget(QLabel("start : end : step"))
-        self.sweep_widget_layout.addStretch()
+        self.sweep_widget_layout.addSpacing(20)
 
         self.start_sweep_line_edit = QLineEdit()
         self.start_sweep_line_edit.setText(self.start_sweep)
+        self.start_sweep_line_edit.setFixedWidth(100)
 
         self.end_sweep_line_edit = QLineEdit()
         self.end_sweep_line_edit.setText(self.end_sweep)
+        self.end_sweep_line_edit.setFixedWidth(100)
+
         
         self.step_sweep_line_edit = QLineEdit()
         self.step_sweep_line_edit.setText(self.step_sweep)
+        self.step_sweep_line_edit.setFixedWidth(100)
+
 
         self.sweep_widget_layout.addWidget(self.start_sweep_line_edit)
         self.sweep_widget_layout.addWidget(self.end_sweep_line_edit)
         self.sweep_widget_layout.addWidget(self.step_sweep_line_edit)
-
+        self.sweep_widget_layout.addStretch()
         
 
         self.widget_layout.addWidget(self.sweep_widget)
@@ -190,21 +195,26 @@ class SimulationSection(QWidget):
         self.sweep_widget_w_layout = QHBoxLayout(self.sweep_widget_w)
 
         self.sweep_widget_w_layout.addWidget(QLabel("start : end : step"))
-        self.sweep_widget_w_layout.addStretch()
+        self.sweep_widget_w_layout.addSpacing(20)
 
         self.start_sweep_w_line_edit = QLineEdit()
         self.start_sweep_w_line_edit.setText(self.start_sweep_w)
+        self.start_sweep_w_line_edit.setFixedWidth(100)
+
 
         self.end_sweep_w_line_edit = QLineEdit()
         self.end_sweep_w_line_edit.setText(self.end_sweep_w)
-        
+        self.end_sweep_w_line_edit.setFixedWidth(100)
+
         self.step_sweep_w_line_edit = QLineEdit()
         self.step_sweep_w_line_edit.setText(self.step_sweep_w)
+        self.step_sweep_w_line_edit.setFixedWidth(100)
+
 
         self.sweep_widget_w_layout.addWidget(self.start_sweep_w_line_edit)
         self.sweep_widget_w_layout.addWidget(self.end_sweep_w_line_edit)
         self.sweep_widget_w_layout.addWidget(self.step_sweep_w_line_edit)
-
+        self.sweep_widget_w_layout.addStretch()
         
 
         self.widget_layout.addWidget(self.sweep_widget_w)

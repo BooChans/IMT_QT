@@ -76,12 +76,13 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.sampling_combo.setCurrentText(self.sampling)
 
         self.global_params_widget_layout.addWidget(window_size_label)
-        self.global_params_widget_layout.addStretch()
+        self.global_params_widget_layout.addSpacing(20)
         self.global_params_widget_layout.addWidget(self.window_size_combo)
-        self.global_params_widget_layout.addSpacing(10)
-        self.global_params_widget_layout.addWidget(sampling_label)
         self.global_params_widget_layout.addStretch()
+        self.global_params_widget_layout.addWidget(sampling_label)
+        self.global_params_widget_layout.addSpacing(20)
         self.global_params_widget_layout.addWidget(self.sampling_combo)
+        self.global_params_widget_layout.addStretch()
 
         label = QLabel("Global parameters")
         label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)  # Only grow horizontally
