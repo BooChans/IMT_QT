@@ -121,54 +121,7 @@ def slit_aperture(shape=(1024, 1024), size=(700, 1024), W=100, d=500, dx=1.0):
 
     return aperture
 
-    return aperture
-def slit_aperture___(shape=(512, 512), size=(200, 100), W=2, d=10, dx=1.0):
-    """
-    Create a horizontal slit aperture with multiple slits, using physical units.
-
-    Args:
-        shape (tuple): Output image shape (pixels) (height, width).
-        size (tuple): Area in microns (height, width) that slits will occupy.
-                      Height determines the vertical range of the slit array.
-        W (float): Slit height in microns.
-        d (float): Distance between slit centers in microns.
-        dx (float): Sampling size (microns per pixel).
-
-    Returns:
-        2D np.array: Binary image with 1s for slits, 0s elsewhere.
-    """
-    assert W > 0 and d > 0, "W and d must be positive."
-    assert W < d, f"Invalid config: slit height W={W} must be less than spacing d={d}"
-    assert W / dx >= 1, f"Slit height W={W} too small for sampling dx={dx} (W/dx = {W/dx:.2f} < 1 px)"
-    assert d / dx >= 1, f"Slit spacing d={d} too small for sampling dx={dx} (d/dx = {d/dx:.2f} < 1 px)"
-
-    h, w = shape
-    aperture = np.zeros((h, w), dtype=np.float64)
-
-    # Convert physical sizes to pixels
-    size_h_px = int(size[0] / dx)
-    size_w_px = int(size[1] / dx)
-    W_px = int(W / dx)
-    d_px = int(d / dx)
-
-    # Center of the image
-    cy, cx = h // 2, w // 2
-
-    # Slit area bounds
-    x_start = cx - size_w_px // 2
-    x_end = cx + size_w_px // 2
-
-    # Number of slits that can fit vertically
-    num_slits = size_h_px // d_px
-
-    for i in range(num_slits):
-        slit_cy = cy - (num_slits // 2) * d_px + i * d_px
-        y_start = slit_cy - W_px // 2
-        y_end = slit_cy + W_px // 2
-        aperture[y_start:y_end, x_start:x_end] = 1.0
-
-    return aperture
-
+ 
 def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size=(5, 5), dx=1.0):
     """
     Create a 2D image with a grid of square apertures.
@@ -327,7 +280,7 @@ if __name__ == "__main__":
     z = 10                 # 10 meters propagation distance
     radius = 0.1e-3        # 0.1 mm aperture
 
-    aperture = slit_aperture_h(size=(30, 512))
+    aperture = slit_aperture(size=(30, 512))
 
     num_slices = 1
     # Repeat the aperture and FFT along z axis
