@@ -121,36 +121,6 @@ class SimulationSection(QWidget):
         self.resolution_widget_layout.addStretch()
 
         self.widget_layout.addWidget(self.resolution_widget)
-        self.checkbox_widget = QWidget() #alignment
-        self.checkbox_widget_layout = QHBoxLayout(self.checkbox_widget)
-        self.checkbox = QCheckBox("Manual sampling")
-
-        
-        self.checkbox_widget_layout.addWidget(self.checkbox)
-
-        self.sampling_selection_widget = QWidget()
-        self.sampling_selection_widget_layout = QHBoxLayout(self.sampling_selection_widget)
-
-        sampling_label = QLabel("Define sampling")
-
-        self.sampling_line_edit=QLineEdit()
-        self.sampling_line_edit.setFixedWidth(100)
-        self.sampling_line_edit.setText(self.sampling)
-
-        self.combo = QComboBox()
-        self.combo.addItems(["µm","mm", "m"])
-        self.combo.setCurrentText(self.unit_distance)
-
-        self.sampling_selection_widget_layout.addWidget(sampling_label)
-        self.sampling_selection_widget_layout.addStretch()
-        self.sampling_selection_widget_layout.addWidget(self.sampling_line_edit)
-        self.sampling_selection_widget_layout.addWidget(self.combo)
-
-        self.sampling_line_edit.setEnabled(False)
-        self.combo.setEnabled(False)
-
-        self.widget_layout.addWidget(self.checkbox_widget)
-        self.widget_layout.addWidget(self.sampling_selection_widget)
 
 
         self.algo_label = QLabel("")
@@ -291,7 +261,6 @@ class SimulationSection(QWidget):
 
 
     def setup_connections(self):
-        self.checkbox.stateChanged.connect(self.update_sampling_input)
         self.combo_res.currentTextChanged.connect(self.update_resolution)
         self.checkbox_sweep.stateChanged.connect(self.update_sweep_visibility)
         self.checkbox_sweep_w.stateChanged.connect(self.update_sweep_w_visibility)
@@ -309,29 +278,6 @@ class SimulationSection(QWidget):
         self.wavelength_line_edit.textChanged.connect(self.update_sim_params)
         self.tile_combo.currentTextChanged.connect(self.update_sim_params)
 
-    def get_inputs(self):
-        """
-        Returns a dictionary with the current values of sampling and unit distance.
-        If manual sampling is not enabled or sampling is invalid, returns None for sampling.
-        """
-        if not self.checkbox.isChecked():
-            return {
-                "sampling": None,
-                "unit": None
-            }
-
-        sampling_text = self.sampling_line_edit.text()
-        unit = self.combo.currentText()
-
-        try:
-            sampling_value = float(sampling_text)
-        except ValueError:
-            sampling_value = None  # fallback if the input is not a valid float
-
-        return {
-            "sampling": sampling_value,
-            "unit": unit
-        }
 
     def start_diffraction(self, source, aperture, wavelength, z, dx, eod=False):
         self.diffraction_thread = MessageWorker(
@@ -475,18 +421,6 @@ class SimulationSection(QWidget):
         pixout_ = wavelength * abs(z) / (N * dx)
         return pixout_
 
-    def update_sampling_input(self, state):
-        if self.checkbox.isChecked():
-            self.sampling_line_edit.setEnabled(True)
-            self.combo.setEnabled(True)
-        else:
-            self.sampling_line_edit.setEnabled(False)
-            self.combo.setEnabled(False)
-
-    def update_sampling_line(self):
-        sampling_fl = round(float(self.sampling),2)
-        sampling_fl = str(sampling_fl)
-        self.sampling_line_edit.setText(sampling_fl)
 
     def update_resolution(self, text):
         self.resolution_multiplier = text

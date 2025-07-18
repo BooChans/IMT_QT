@@ -26,18 +26,10 @@ class OpticalDiffractionSimulator(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self.expert_mode = False
         self.matrix_size = "512"
         self.sampling = "1.0"
         
 
-        #menu_bar = self.menuBar()
-        #mode_menu = menu_bar.addMenu("Mode")
-
-        #self.expert_mode_toggle = QAction("Expert Mode", self, checkable=True)
-        #self.expert_mode_toggle.setChecked(False) 
-        #self.expert_mode_toggle.triggered.connect(self.expert_mode_enable)
-        #mode_menu.addAction(self.expert_mode_toggle)
 
         # Instantiate all 3 sections
         self.source_section = SourceSection()
@@ -47,10 +39,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         #disabling widgets of the simulation section
         self.simulation_section.wavelength_widget.hide()
         self.simulation_section.tile_widget.hide()
-
-        #disable widgets related to expert mode 
-        self.simulation_section.sampling_selection_widget.hide()
-        self.simulation_section.checkbox_widget.hide()
 
 
         self.graph_window_size = (300,300)
@@ -144,57 +132,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.sweep_button.clicked.connect(self.run_sweep)
         self.sweep_button_w.clicked.connect(self.run_sweep_w)
 
-        #start : unnecessary connections
-        self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_sampling)
-
-        self.aperture_section.shape_combo.currentTextChanged.connect(self.update_sampling)
-        self.aperture_section.unit_combo.currentTextChanged.connect(self.update_sampling)
-
-        # Simple aperture size line edits
-        self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.simple_size_w_line_edit.editingFinished.connect(self.update_sampling)
-
-        # Slit aperture line edits
-        self.aperture_section.slit_size_h_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.slit_size_w_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.slit_width_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.slit_distance_line_edit.editingFinished.connect(self.update_sampling)
-
-        # Array aperture line edits
-        self.aperture_section.matrix_h_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.matrix_w_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.matrix_spacing_line_edit.editingFinished.connect(self.update_sampling)
-        
-        self.aperture_section.hel_bd_line_edit.editingFinished.connect(self.update_sampling)
-        self.aperture_section.hel_sd_line_edit.editingFinished.connect(self.update_sampling)
-        
-        self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_sampling)
-
-        self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_samlping_input)
-
-        self.aperture_section.shape_combo.currentTextChanged.connect(self.update_samlping_input)
-        self.aperture_section.unit_combo.currentTextChanged.connect(self.update_samlping_input)
-
-        # Simple aperture size line edits
-        self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.simple_size_w_line_edit.editingFinished.connect(self.update_samlping_input)
-
-        # Slit aperture line edits
-        self.aperture_section.slit_size_h_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.slit_size_w_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.slit_width_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.slit_distance_line_edit.editingFinished.connect(self.update_samlping_input)
-
-        # Array aperture line edits
-        self.aperture_section.matrix_h_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.matrix_w_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.matrix_spacing_line_edit.editingFinished.connect(self.update_samlping_input)
-        
-        self.aperture_section.hel_bd_line_edit.editingFinished.connect(self.update_samlping_input)
-        self.aperture_section.hel_sd_line_edit.editingFinished.connect(self.update_samlping_input)
-        
-        self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_samlping_input)
-        
         self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
 
         self.aperture_section.shape_combo.currentTextChanged.connect(self.update_illumination_of_aperture)
@@ -231,8 +168,6 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.aperture_section.img_pha.toggled.connect(self.update_illumination_of_aperture)
 
 
-        self.simulation_section.sampling_line_edit.editingFinished.connect(self.update_window)
-        self.simulation_section.checkbox.stateChanged.connect(self.restore_auto_sampling)
 
         self.window_size_combo.currentTextChanged.connect(self.update_window_size)
         self.sampling_combo.currentTextChanged.connect(self.update_sampling_simple)
@@ -322,116 +257,7 @@ class OpticalDiffractionSimulator(QMainWindow):
             print(f"Sweep error : {e}")
 
 
-    def update_sampling(self):
-        if self.expert_mode:
 
-            aperture_params = self.aperture_section.get_inputs()
-
-
-            # 2. Get the source distribution
-            source_params = self.source_section.get_inputs()
-
-            # 3. Get wavelength, distance, pixel size
-            source_size = tuple(map(float,source_params['size']))
-            aperture_size = tuple(map(float,aperture_params['aperture_size']))
-
-            light_source_array_shape = tuple(map(int,self.source_section.array_shape))
-            aperture_array_shape = tuple(map(int,self.aperture_section.array_shape))
-            assert self.source_section.sampling == self.aperture_section.sampling
-            dx = float(self.source_section.sampling)
-
-            if max(source_size) > max((dx*light_source_array_shape[0], dx*light_source_array_shape[1])) or \
-            max(aperture_size) > max((dx*aperture_array_shape[0], dx*aperture_array_shape[1])):
-                dx = auto_sampling_N(source_size=source_size, apertures_size=aperture_size, shape=light_source_array_shape)
-                dx_str = str(dx)
-                self.source_section.sampling = dx_str
-                self.aperture_section.sampling = dx_str
-                self.simulation_section.sampling = dx_str
-                self.aperture_section.update_aperture_graph()
-                self.source_section.update_graph()
-
-            if max(source_size) < 0.58 * max((dx*light_source_array_shape[0], dx*light_source_array_shape[1])) or \
-            0.58 * max(aperture_size) < max((dx*aperture_array_shape[0], dx*aperture_array_shape[1])):
-                dx = auto_sampling_N(source_size=source_size, apertures_size=aperture_size, shape=light_source_array_shape)
-                dx_str = str(dx)
-                self.source_section.sampling = dx_str
-                self.aperture_section.sampling = dx_str
-                self.simulation_section.sampling = dx_str
-                self.aperture_section.update_aperture_graph()
-                self.source_section.update_graph()
-
-
-
-
-    def update_window(self):
-        if not self.expert_mode:
-            aperture_params = self.aperture_section.get_inputs()
-
-
-            # 2. Get the source distribution
-            source_params = self.source_section.get_inputs()
-
-            # 3. Get sampling params
-
-            sampling_params = self.simulation_section.get_inputs()
-
-            dx_str = sampling_params['sampling']
-            dx = float(dx_str)
-
-            # 3. Get wavelength, distance, pixel size
-            source_size = tuple(map(int,source_params['size']))
-            aperture_size = tuple(map(int,aperture_params['aperture_size']))
-
-            N = auto_shaping_dx(source_size=source_size, aperture_size=aperture_size, dx = dx)
-            assert N < 2049, "Sampling is too low"
-            self.source_section.sampling = dx_str
-            self.aperture_section.sampling = dx_str
-            self.simulation_section.sampling = dx_str
-            if N > 512 and N < 2049:
-                array_shape = (str(N), str(N))
-                self.source_section.array_shape = array_shape
-                self.aperture_section.array_shape = array_shape
-            elif N < 512: 
-                array_shape = (512, 512)
-                self.source_section.array_shape = array_shape
-                self.aperture_section.array_shape = array_shape
-            self.source_section.update_attributes()
-            self.source_section.update_graph()
-            self.aperture_section.sync_attributes_from_widgets()
-            self.aperture_section.update_aperture_graph()
-            self.simulation_section.update_sampling_line()
-
-
-    def update_samlping_input(self):
-        self.simulation_section.update_sampling_line()
-
-    def restore_auto_sampling(self, state):
-        if self.expert_mode:
-            if state == Qt.Unchecked: 
-                array_shape = (512, 512)
-                self.source_section.array_shape = array_shape
-                self.aperture_section.array_shape = array_shape
-                self.update_sampling()
-                self.source_section.update_attributes()
-                self.source_section.update_graph()
-                self.aperture_section.sync_attributes_from_widgets()
-                self.aperture_section.update_aperture_graph()
-                self.simulation_section.update_sampling_line()
-
-    def expert_mode_enable(self, checked):
-        self.expert_mode = checked
-        if checked:
-            self.simulation_section.sampling_selection_widget.show()
-            self.simulation_section.checkbox_widget.show()
-        else:
-            self.simulation_section.sampling_selection_widget.hide()
-            self.simulation_section.checkbox_widget.show()
-            self.default_mode()
-
-    def default_mode(self):
-        #self.source_section.default()
-        #self.aperture_section.default()
-        None
 
     def update_window_size(self):
         self.matrix_size = self.window_size_combo.currentText()

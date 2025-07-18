@@ -56,6 +56,8 @@ class DOEDesignSimulation(QMainWindow):
         self.simulation_section.sampling_selection_widget.hide()
         self.simulation_section.checkbox_widget.hide()
 
+        # hide line profile for target image
+
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(self.image_section)
         splitter.addWidget(self.eod_section)

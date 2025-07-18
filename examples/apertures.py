@@ -2,7 +2,7 @@ import numpy as np
 import sys
 from PyQt5.QtWidgets import QApplication
 from DiffractionSection import RealTimeCrossSectionViewer 
-
+from PIL import Image
 
 
 
@@ -122,7 +122,7 @@ def slit_aperture(shape=(1024, 1024), size=(700, 1024), W=100, d=500, dx=1.0):
     return aperture
 
  
-def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size=(5, 5), dx=1.0):
+def square_aperture_array(shape=(512, 512), square_size=1, spacing=5, grid_size=(5, 5), dx=1.0):
     """
     Create a 2D image with a grid of square apertures.
 
@@ -280,12 +280,14 @@ if __name__ == "__main__":
     z = 10                 # 10 meters propagation distance
     radius = 0.1e-3        # 0.1 mm aperture
 
-    aperture = slit_aperture(size=(30, 512))
+    aperture = square_aperture_array()
 
     num_slices = 1
     # Repeat the aperture and FFT along z axis
     aperture_3D = np.repeat(aperture[np.newaxis, :, :], num_slices, axis=0)
 
+    ap = Image.fromarray((aperture*255).astype(np.uint8))
+    ap.save("beam_splitter.png")
 
     viewer = RealTimeCrossSectionViewer(aperture_3D)
 
