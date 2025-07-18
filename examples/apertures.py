@@ -61,51 +61,113 @@ def rectangular_aperture(shape=(512,512), size = (300,300), dx = 1.0):
     return aperture
 
 
-def slit_apeture(shape=(512,512), size = (200,100), W = 2, d = 10, dx = 1.0):
+def slit_aperture(shape=(1024, 1024), size=(700, 1024), W=100, d=500, dx=1.0):
     """
-    Create a vertical slit aperture with multiple slits, using physical units.
+    Create a horizontal multi-slit aperture pattern where the midpoint between
+    the first and last slits lies on the center row of the image. All slits fit
+    inside the specified aperture height.
+
+    Args:
+        shape (tuple): (image_height_px, image_width_px)
+        size (tuple): (aperture_height_um, aperture_width_um)
+        W (float): height of each slit (um)
+        d (float): spacing between slit centers (um)
+        dx (float): microns per pixel
+
+    Returns:
+        np.ndarray: binary aperture image (1s = slits)
+    """
+    assert W > 0 and d > 0
+    assert W < d
+    assert W / dx >= 1, "Slit height too small for resolution"
+    assert d / dx >= 1, "Slit spacing too small for resolution"
+
+    img_h, img_w = shape
+    aperture = np.zeros((img_h, img_w), dtype=np.float64)
+
+    # Convert physical units to pixels
+    ap_h_px = int(size[0] / dx)
+    ap_w_px = int(size[1] / dx)
+    W_px = int(W / dx)
+    d_px = int(d / dx)
+
+    # Determine number of slits that can fit vertically in the aperture height
+    num_slits = int((ap_h_px + d_px - 1) // d_px)  # max that fit with spacing
+    if num_slits < 1:
+        return aperture  # No slits can be drawn
+
+    # Compute vertical center of image
+    cy = img_h // 2
+    cx = img_w // 2
+
+    # Total vertical span of the slit centers
+    slit_span = (num_slits - 1) * d_px
+
+    # First slit center y-position so that midpoint of slit array is centered
+    first_center_y = cy - slit_span // 2
+
+    # Horizontal bounds (centered)
+    x_start = cx - ap_w_px // 2
+    x_end = cx + ap_w_px // 2
+
+    # Draw each slit
+    for i in range(num_slits):
+        center_y = first_center_y + i * d_px
+        y_start = center_y - W_px // 2
+        y_end = center_y + W_px // 2
+
+        if 0 <= y_start < img_h and y_end <= img_h:
+            aperture[y_start:y_end, x_start:x_end] = 1.0
+
+    return aperture
+
+    return aperture
+def slit_aperture___(shape=(512, 512), size=(200, 100), W=2, d=10, dx=1.0):
+    """
+    Create a horizontal slit aperture with multiple slits, using physical units.
 
     Args:
         shape (tuple): Output image shape (pixels) (height, width).
-        size (tuple): Total area (μm) to occupy with slits (height, width).
-        W (float): Slit width in microns.
+        size (tuple): Area in microns (height, width) that slits will occupy.
+                      Height determines the vertical range of the slit array.
+        W (float): Slit height in microns.
         d (float): Distance between slit centers in microns.
         dx (float): Sampling size (microns per pixel).
 
     Returns:
         2D np.array: Binary image with 1s for slits, 0s elsewhere.
     """
-
     assert W > 0 and d > 0, "W and d must be positive."
-    assert W < d, f"Invalid config: slit width W={W} must be less than spacing d={d}"
-    assert W / dx >= 1, f"Slit width W={W} too small for sampling dx={dx} (W/dx = {W/dx:.2f} < 1 px)"
+    assert W < d, f"Invalid config: slit height W={W} must be less than spacing d={d}"
+    assert W / dx >= 1, f"Slit height W={W} too small for sampling dx={dx} (W/dx = {W/dx:.2f} < 1 px)"
     assert d / dx >= 1, f"Slit spacing d={d} too small for sampling dx={dx} (d/dx = {d/dx:.2f} < 1 px)"
 
     h, w = shape
     aperture = np.zeros((h, w), dtype=np.float64)
 
-    # Convert dimensions from microns to pixels
-    hs_px = int(size[0] / dx)
-    ws_px = int(size[1] / dx)
+    # Convert physical sizes to pixels
+    size_h_px = int(size[0] / dx)
+    size_w_px = int(size[1] / dx)
     W_px = int(W / dx)
     d_px = int(d / dx)
 
-    # Image center
+    # Center of the image
     cy, cx = h // 2, w // 2
-    y_start = cy - hs_px // 2
-    y_end = cy + hs_px // 2
 
-    # Number of slits
-    num_slits = hs_px // d_px
+    # Slit area bounds
+    x_start = cx - size_w_px // 2
+    x_end = cx + size_w_px // 2
+
+    # Number of slits that can fit vertically
+    num_slits = size_h_px // d_px
 
     for i in range(num_slits):
-        slit_cx = cx - (num_slits // 2) * d_px + i * d_px
-        x_start = slit_cx - W_px // 2
-        x_end = slit_cx + W_px // 2
-        aperture[x_start:x_end, y_start:y_end] = 1.0
+        slit_cy = cy - (num_slits // 2) * d_px + i * d_px
+        y_start = slit_cy - W_px // 2
+        y_end = slit_cy + W_px // 2
+        aperture[y_start:y_end, x_start:x_end] = 1.0
 
     return aperture
-
 
 def square_aperture_array(shape=(512, 512), square_size=5, spacing=20, grid_size=(5, 5), dx=1.0):
     """
@@ -265,7 +327,7 @@ if __name__ == "__main__":
     z = 10                 # 10 meters propagation distance
     radius = 0.1e-3        # 0.1 mm aperture
 
-    aperture = elliptical_aperture()
+    aperture = slit_aperture_h(size=(30, 512))
 
     num_slices = 1
     # Repeat the aperture and FFT along z axis

@@ -11,7 +11,7 @@ import sys
 import os
 
 from DiffractionSection import RealTimeCrossSectionViewer
-from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_apeture, estimate_aperture_extent
+from apertures import elliptical_aperture, rectangular_aperture, elliptical_aperture_array, square_aperture_array, slit_aperture, estimate_aperture_extent
 from automatic_sizing import zero_pad
 from PIL import Image
 import tifffile
@@ -418,7 +418,7 @@ class ApertureSection(QWidget):
         dx = float(self.sampling)
         if shape == "Elliptic":
             size = tuple(map(int, params["aperture_size"]))
-            assert max(size) < max((dx*array_shape[0], dx*array_shape[1]))
+            assert max(size) <= max((dx*array_shape[0], dx*array_shape[1]))
             return elliptical_aperture(shape=array_shape,size=size, dx = dx)
 
         elif shape == "Rectangular":
@@ -430,8 +430,8 @@ class ApertureSection(QWidget):
             size = tuple(map(int, self.aperture_size))
             width = int(params["slit_width"])
             distance = int(params["slit_distance"])
-            assert max(size) < max((dx*array_shape[0], dx*array_shape[1]))
-            return slit_apeture(shape=array_shape,size=size, d=distance, W=width, dx=dx)
+            assert max(size) <= max((dx*array_shape[0], dx*array_shape[1]))
+            return slit_aperture(shape=array_shape,size=size, d=distance, W=width, dx=dx)
 
         elif shape == "Array of ellipses":
             matrix = tuple(map(int, params["array_matrix"]))
@@ -439,7 +439,7 @@ class ApertureSection(QWidget):
             big_d = int(params["big_diameter"])
             small_d = int(params["small_diameter"])
             new_size = estimate_aperture_extent(big_diameter=big_d,small_diameter=small_d, spacing=spacing, grid_size=matrix)
-            assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
+            assert max(new_size) <= max((dx*array_shape[0], dx*array_shape[1]))
             self.aperture_size = tuple(map(str,new_size))
             return elliptical_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, big_diameter=big_d, small_diameter=small_d, dx=dx)
 
@@ -450,7 +450,7 @@ class ApertureSection(QWidget):
             spacing = int(params["array_spacing"])
             square_size = int(params["square_size"])
             new_size = estimate_aperture_extent(big_diameter=square_size,small_diameter=square_size, spacing=spacing, grid_size=matrix)
-            assert max(new_size) < max((dx*array_shape[0], dx*array_shape[1]))
+            assert max(new_size) <= max((dx*array_shape[0], dx*array_shape[1]))
             self.aperture_size = tuple(map(str,new_size))
             return square_aperture_array(shape=array_shape,grid_size=matrix, spacing=spacing, square_size=square_size, dx=dx)
         
