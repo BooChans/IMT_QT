@@ -52,9 +52,6 @@ class DOEDesignSimulation(QMainWindow):
 
         self.image_section.graph_widget.slice_view.ui.histogram.hide()
 
-        #no sampling
-        self.simulation_section.sampling_selection_widget.hide()
-        self.simulation_section.checkbox_widget.hide()
 
         # hide line profile for target image
 
