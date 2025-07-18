@@ -41,6 +41,8 @@ class ImageSection(QWidget):
         self.image = np.repeat(image[np.newaxis, :, :], 1, axis=0)
         self.graph_widget = RealTimeCrossSectionViewer(self.image)
         self.graph_widget.display_widget.hide()
+        self.graph_widget.toggle_line_cb.hide()
+
 
         self.setup_ui()
 
