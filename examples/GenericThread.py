@@ -1,5 +1,4 @@
 from PyQt5.QtCore import QThread, pyqtSignal, pyqtSlot, QMetaObject, Qt, Q_ARG
-from ifmta.ifta import IftaImproved
 
 class GenericThread(QThread):
 

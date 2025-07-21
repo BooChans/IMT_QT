@@ -1,7 +1,7 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem , QPushButton, QFileDialog, QHBoxLayout,QLineEdit, QToolButton, QStyle, QSizePolicy, QProgressBar
+    QSplitter, QLabel, QGridLayout , QPushButton, QFileDialog, QHBoxLayout,QLineEdit, QSizePolicy, QProgressBar
 )
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
@@ -12,12 +12,10 @@ from SimulationSection import SimulationSection
 from GenericThread import GenericThread
 import sys
 from PIL import Image
-from ifmta.ifta import Ifta, IftaImproved
+from ifmta.ifta import IftaImproved
 from automatic_sizing import zero_pad
 from ressource_path import resource_path
 import tifffile
-
-from diffraction_propagation import angular_spectrum, far_field
 
 class DOEDesignSimulation(QMainWindow):
     def __init__(self):

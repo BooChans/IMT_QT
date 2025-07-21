@@ -1,17 +1,12 @@
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout,
+    QApplication, QVBoxLayout, QWidget, QLabel, QRadioButton, QComboBox, QLineEdit,QHBoxLayout
 )
-from PyQt5.QtCore import Qt
 import pyqtgraph as pg
-from pyqtgraph import LineSegmentROI, InfiniteLine
-from scipy.ndimage import map_coordinates
 import sys
 
 from DiffractionSection import RealTimeCrossSectionViewer
-from sources import gaussian_beam, plane_wave_elliptical, plane_wave_rectangular, converging_spherical_wave
-from automatic_sizing import auto_sampling_N
+from sources import gaussian_beam, plane_wave_rectangular, converging_spherical_wave
 
 class SourceSection(QWidget):
     def __init__(self):

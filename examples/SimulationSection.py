@@ -1,19 +1,16 @@
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout, QPushButton, QProgressBar
+    QApplication, QVBoxLayout, QWidget, QCheckBox,
+    QLabel, QComboBox, QLineEdit,QHBoxLayout, QPushButton, QProgressBar
 )
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QIcon
-import pyqtgraph as pg
-from pyqtgraph import LineSegmentROI, InfiniteLine
 from scipy.ndimage import map_coordinates
 import sys
 
 from ressource_path import resource_path
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, near_field, angular_spectrum, sweep, sweep_w, fraunhofer
-from resizing_ import crop_to_signal, format_if_large
+from diffraction_propagation import far_field, angular_spectrum, sweep, sweep_w, fraunhofer
 from GenericThread import GenericThread
 from MessageWorker import MessageWorker
 

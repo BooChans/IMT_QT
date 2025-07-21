@@ -1,15 +1,11 @@
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem, QComboBox, QLineEdit, QHBoxLayout, QFileDialog, QStyle, QToolButton, QPushButton, QRadioButton
+    QApplication, QVBoxLayout, QWidget,
+    QLabel, QGridLayout, QComboBox, QLineEdit, QHBoxLayout
 )
-from PyQt5.QtCore import Qt
-import pyqtgraph as pg
 import sys
-import matplotlib.pyplot as plt
 
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, angular_spectrum
 
 class EODSection(QWidget):
 

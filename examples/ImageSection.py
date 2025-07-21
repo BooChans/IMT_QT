@@ -1,16 +1,14 @@
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem, QComboBox, QLineEdit, QHBoxLayout, QFileDialog, QStyle, QToolButton
+    QApplication, QVBoxLayout, QWidget,
+    QLabel, QComboBox, QLineEdit, QHBoxLayout, QFileDialog, QStyle, QToolButton
 )
-from PyQt5.QtCore import Qt
-import pyqtgraph as pg
+
 import sys
-import matplotlib.pyplot as plt
 
 from DiffractionSection import RealTimeCrossSectionViewer
 from apertures import elliptical_aperture, rectangular_aperture
-from automatic_sizing import auto_sampling_N_2, auto_sampling_dx_2, zero_pad
+from automatic_sizing import zero_pad
 from PIL import Image
 import os
 import tifffile 

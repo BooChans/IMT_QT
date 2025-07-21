@@ -3,17 +3,12 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
     QSplitter, QLabel, QSlider, QGridLayout, QPushButton, QAction, QMessageBox, QComboBox, QHBoxLayout, QSizePolicy
 )
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 import pyqtgraph as pg
-from pyqtgraph import LineSegmentROI, InfiniteLine
-from scipy.ndimage import map_coordinates
 import sys
-import os
 
 
-from automatic_sizing import auto_sampling_N, auto_shaping_dx, zero_pad
-import matplotlib.pyplot as plt
+from automatic_sizing import zero_pad
 from ressource_path import resource_path
 
 from SourceSection import SourceSection

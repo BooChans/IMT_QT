@@ -1,12 +1,8 @@
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
-    QSplitter, QLabel, QSlider, QGridLayout, QRadioButton, QComboBox, QLineEdit,QHBoxLayout, QToolButton, QFileDialog, QStyle
+    QApplication, QVBoxLayout, QWidget, QCheckBox,
+    QLabel, QRadioButton, QComboBox, QLineEdit,QHBoxLayout, QToolButton, QFileDialog, QStyle
 )
-from PyQt5.QtCore import Qt
-import pyqtgraph as pg
-from pyqtgraph import LineSegmentROI, InfiniteLine
-from scipy.ndimage import map_coordinates
 import sys
 import os
 

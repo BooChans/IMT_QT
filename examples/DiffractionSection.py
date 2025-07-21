@@ -1,11 +1,11 @@
 import numpy as np
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox,
+    QApplication, QVBoxLayout, QWidget, QCheckBox,
     QSplitter, QLabel, QSlider, QGridLayout,QGraphicsLineItem, QComboBox, QHBoxLayout
 )
 from PyQt5.QtCore import Qt
 import pyqtgraph as pg
-from pyqtgraph import LineSegmentROI, InfiniteLine, TextItem
+from pyqtgraph import LineSegmentROI, InfiniteLine
 from scipy.ndimage import map_coordinates
 from resizing_ import format_if_large
 
