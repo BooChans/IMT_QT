@@ -41,6 +41,9 @@ class DOEDesignSimulation(QMainWindow):
         self.eod_section = EODSection()
         self.simulation_section = SimulationSection()
         
+        self.simulation_section.intermediate_graph_widget.hide()
+        self.simulation_section.intermediate_settings_button.hide()
+        self.simulation_section.go_filtering_button.hide()
         # Simulation distance preset
 
         self.simulation_section.simulation_distance = "1e8"
