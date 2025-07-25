@@ -213,6 +213,8 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.aperture_section.img_amp.toggled.connect(self.update_intermediate_graph)
         self.aperture_section.img_pha.toggled.connect(self.update_intermediate_graph)
 
+        self.source_section.focal_length_line_edit.editingFinished.connect(self.update_intermediate_graph)
+
 
         self.window_size_combo.currentTextChanged.connect(self.update_window_size)
         self.sampling_combo.currentTextChanged.connect(self.update_sampling_simple)
@@ -312,21 +314,42 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.source_section.array_shape = window_size_tuple
         self.aperture_section.array_shape = window_size_tuple
 
+        self.simulation_section.filter_shape = window_size_tuple
+        
+        N = int(self.matrix_size)
+
+        self.simulation_section.df = 1/(N*float(self.simulation_section.sampling)*self.simulation_section.conversion_dict[self.simulation_section.unit_distance])
+        self.simulation_section.fx = np.linspace(-N/2, N/2-1, N) * self.simulation_section.df
+        self.simulation_section.fy = np.linspace(-N/2, N/2-1, N) * self.simulation_section.df
+
 
 
         self.source_section.update_graph()
         self.aperture_section.update_aperture_graph()
         self.update_illumination_of_aperture()
+        self.simulation_section.update_filter()
+        self.update_intermediate_graph()
+
 
     def update_sampling_simple(self):
         self.sampling = self.sampling_combo.currentText()
 
         self.source_section.sampling = self.sampling
         self.aperture_section.sampling = self.sampling
+        if self.simulation_section.fourier_mode:
+            self.simulation_section.sampling = self.sampling
+
+        N = max(tuple(map(int,self.source_section.array_shape)))
+        self.simulation_section.df = 1/(N*float(self.simulation_section.sampling)*self.simulation_section.conversion_dict[self.simulation_section.unit_distance])
+        self.simulation_section.fx = np.linspace(-N/2, N/2-1, N) * self.simulation_section.df
+        self.simulation_section.fy = np.linspace(-N/2, N/2-1, N) * self.simulation_section.df
+
 
         self.source_section.update_graph()
         self.aperture_section.update_aperture_graph()
         self.update_illumination_of_aperture()
+        self.simulation_section.update_filter()
+        self.update_intermediate_graph()
 
     def update_illumination_of_aperture(self):
         aperture = self.aperture_section.aperture
@@ -421,16 +444,24 @@ class OpticalDiffractionSimulator(QMainWindow):
 
     def update_intermediate_graph(self):
         if self.simulation_section.fourier_mode:
+
+
             source = self.source_section.light_source 
             aperture = self.aperture_section.aperture
             self.simulation_section.update_intermediate_graph(source, aperture)
+
             filter = self.simulation_section.filter
             intermediate_volume = self.simulation_section.intermediate_volume
-            filtered_volume = intermediate_volume * filter
-            U0 = np.abs(filtered_volume)**2 
+            self.simulation_section.intermediate_graph_widget.sampling = 1/(max(intermediate_volume.shape)*float(self.aperture_section.sampling))
+
+            filtered_volume = filter * intermediate_volume
+
+            log_intermediate_volume = np.log1p(np.abs(intermediate_volume))
+            log_filtered_volume = np.log1p(np.abs(filtered_volume))
+            U0 = filter*log_filtered_volume + 0.4*(1-filter)*log_intermediate_volume
+            lower, upper = np.percentile(U0,[0,99.95])
             self.simulation_section.intermediate_graph_widget.update_data_ap(U0)
-            lower, upper = np.percentile(U0,[1, 95])
-            self.simulation_section.intermediate_graph_widget.slice_view.setLevels(lower, upper)
+            self.simulation_section.intermediate_graph_widget.slice_view.setLevels(-0.1*upper,upper)
 
     def update_fourier_filtering_graph(self):
         if self.simulation_section.fourier_mode:

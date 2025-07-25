@@ -15,6 +15,7 @@ from GenericThread import GenericThread
 from MessageWorker import MessageWorker
 
 from SimSettingsDialog import SimSettingsDialog
+from filters import elliptic_filter, elliptic_filter_band, rectangular_filter, rectangular_filter_band
 
 
 class SimulationSection(QWidget):
@@ -36,6 +37,8 @@ class SimulationSection(QWidget):
         self.simulation_distance = "1e6" #µm
         self.wavelength = "0.633" #µm
         self.tile = "1"
+
+        self.conversion_dict = {"µm" : 1e-6, "mm": 1e-3, "m": 1}
 
         self.fourier_mode = False
 
@@ -61,8 +64,8 @@ class SimulationSection(QWidget):
         self.thickness = "5e4"
         self.offset_x = "0"
         self.offset_y = "0"
-        self.df = 1/(512*1e-6)
         h,w = tuple(map(int, self.filter_shape))
+        self.df = 1/(h*float(self.sampling)*self.conversion_dict[self.unit_distance])
         self.fx = np.linspace(-h/2, h/2-1, h) * self.df
         self.fy = np.linspace(-w/2, w/2-1, w) * self.df
 
@@ -523,6 +526,8 @@ class SimulationSection(QWidget):
             self.cutoff_freq = result["cutoff_freq"]
             self.thickness = result["thickness"]
             self.filter = result["filter"]
+            self.offset_x = result["offset_x"]
+            self.offset_y = result["offset_y"]
             self.intermediate_updated.emit(result)
         else:
             print("User cancelled the dialog")
@@ -560,9 +565,48 @@ class SimulationSection(QWidget):
         filter = self.filter
         U0 = intermediate_volume * filter
         self.volume = ft_2(U0)
+        self.graph_widget.sampling = float(self.sampling)
         self.graph_widget.update_data(self.volume)
 
+    def generate_filter(self):
+        shape = tuple(map(int, self.filter_shape))
+        filter_type =  self.filter_type
+        remove_outside = self.remove_outside
+        cutoff_freq = tuple(map(float, self.cutoff_freq))
+        thickness =  float(self.thickness)
+        offset_x = int(self.offset_x)
+        offset_y = int(self.offset_y)
         
+        fx = self.fx
+        fy = self.fy
+
+        if filter_type == "Elliptic":
+            filter = elliptic_filter(cutoff_freq[0], cutoff_freq[1], fx, fy)
+        elif filter_type == "No filter":
+            filter = np.ones(shape)
+        elif filter_type == "Rectangular":
+            filter = rectangular_filter(cutoff_freq[0], cutoff_freq[1], fx, fy)
+        elif filter_type == "Elliptic Bandpass":
+            filter = elliptic_filter_band(cutoff_freq[0], cutoff_freq[1], fx, fy, thickness)
+        elif filter_type == "Rectangular Bandpass":
+            filter = rectangular_filter_band(cutoff_freq[0], cutoff_freq[1], fx, fy, thickness)
+        elif filter_type == "Image":
+            filter = self.open_image()
+        
+        if filter_type != "No filter":
+            filter = self.insert_with_offset(filter, shape, (offset_x, offset_y))
+        if remove_outside:
+            filter = filter.max()-filter
+        return filter
+    
+    def update_filter(self):
+        filter = self.generate_filter()
+        self.filter = filter[np.newaxis,:]
+
+ 
+    
+
+
         
 
 

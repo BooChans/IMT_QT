@@ -176,7 +176,9 @@ class SimSettingsDialog(QDialog):
             "cutoff_freq": (self.x_cutoff_line_edit.text(),self.y_cutoff_line_edit.text()),
             "thickness" :  self.thickness_line_edit.text(),
             "img_path" : self.img_file_line_edit.text(),
-            "filter" : filter
+            "filter" : filter,
+            "offset_x" : self.offset_x_line_edit.text(),
+            "offset_y" : self.offset_y_line_edit.text()
         }
 
     def update_combo_visibility(self):
