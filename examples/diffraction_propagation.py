@@ -1,6 +1,5 @@
 import numpy as np 
-from resizing_ import resample_and_crop_to_fixed_size
-
+from resizing_ import resample_and_crop_to_fixed_size, smart_resample_and_crop
  
 def far_field(U0, wavelength, z, dx):
     """
@@ -119,10 +118,13 @@ def sweep(U0, wavelength, dx, z_start, z_end, step, callback = None):
     h, w = U0.shape[1:3]
     l = len(Z)
 
+    assert l < 101, "Step too small, please increase it"
+
     shape = (l,h,w)
     diffraction_patterns = np.zeros(shape, dtype=np.complex128)
     samplings = np.zeros((l))
 
+    base_dx = 1.0 if Z[0] < z_limit else wavelength * abs(Z[0]) / (N * dx)
     for i in range(len(Z)): 
         z = Z[i]
         if abs(z) < z_limit:
@@ -131,8 +133,8 @@ def sweep(U0, wavelength, dx, z_start, z_end, step, callback = None):
         else:
             diffraction_pattern = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
-            #diffraction_pattern = resample_and_crop_to_fixed_size(diffraction_pattern, samplings[i], dx, (h,w))
-            #samplings[i] = 1.0
+            diffraction_pattern = smart_resample_and_crop(diffraction_pattern, samplings[i], base_dx, (h,w))
+            samplings[i] = base_dx
             diffraction_patterns[i] = diffraction_pattern
         if callback:
             callback((int(i+1)/l*100))
@@ -150,6 +152,9 @@ def sweep_w(U0, z, dx, w_start, w_end, step, callback = None):
     diffraction_patterns = np.zeros(shape, dtype=np.complex128)
     samplings = np.zeros((l))
 
+
+    base_dx = 1.0 if z < N * dx**2 / W[0] else W[0] * abs(z) / (N * dx)
+
     for i in range(len(W)):
         wavelength = W[i] 
         z_limit = N * dx**2 / wavelength
@@ -157,8 +162,11 @@ def sweep_w(U0, z, dx, w_start, w_end, step, callback = None):
             diffraction_patterns[i] = angular_spectrum(U0, wavelength, z, dx)
             samplings[i] = dx 
         else:
-            diffraction_patterns[i] = far_field(U0, wavelength, z, dx)
+            diffraction_pattern = far_field(U0, wavelength, z, dx)
             samplings[i] = wavelength * abs(z) / (N * dx)
+            diffraction_pattern = smart_resample_and_crop(diffraction_pattern, samplings[i], base_dx, (h,w))
+            samplings[i] = base_dx
+            diffraction_patterns[i] = diffraction_pattern
         if callback:
             callback(int((i+1)/l*100))
 
@@ -167,3 +175,8 @@ def sweep_w(U0, z, dx, w_start, w_end, step, callback = None):
 def fraunhofer(source):
     return np.fft.fftshift(np.fft.fft2(source))
 
+def ft_1(source):
+    return np.fft.fftshift(np.fft.fft2(source, norm="ortho"))
+
+def ft_2(source):
+    return np.abs(np.fft.ifft2(np.fft.ifftshift(source), norm="ortho"))

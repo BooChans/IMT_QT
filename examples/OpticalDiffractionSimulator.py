@@ -23,18 +23,29 @@ class OpticalDiffractionSimulator(QMainWindow):
 
         self.matrix_size = "512"
         self.sampling = "1.0"
-        
-
+    
 
         # Instantiate all 3 sections
         self.source_section = SourceSection()
         self.aperture_section = ApertureSection()
         self.simulation_section = SimulationSection()
+
         
         #disabling widgets of the simulation section
         self.simulation_section.wavelength_widget.hide()
         self.simulation_section.tile_widget.hide()
+        self.simulation_section.intermediate_graph_widget.hide()
+        self.simulation_section.intermediate_settings_button.hide()
+        self.simulation_section.go_filtering_button.hide()
 
+        menu_bar = self.menuBar()
+        options_menu = menu_bar.addMenu("Mode")
+
+        # Create a checkable action
+        self.fourier_filtering = QAction("4f filtering", self, checkable=True)
+        self.fourier_filtering.triggered.connect(self.fourier_option)
+
+        options_menu.addAction(self.fourier_filtering)
 
         self.graph_window_size = (300,300)
         # Layout with splitter
@@ -101,6 +112,7 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.go_button = self.simulation_section.go_button
         self.sweep_button = self.simulation_section.sweep_button
         self.sweep_button_w = self.simulation_section.sweep_button_w
+        self.go_filtering_button = self.simulation_section.go_filtering_button
 
 
 
@@ -126,6 +138,10 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.go_button.clicked.connect(self.run_simulation)
         self.sweep_button.clicked.connect(self.run_sweep)
         self.sweep_button_w.clicked.connect(self.run_sweep_w)
+        self.go_filtering_button.clicked.connect(self.update_fourier_filtering_graph)
+
+        self.simulation_section.intermediate_updated.connect(self.update_intermediate_graph)
+
 
         self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_illumination_of_aperture)
 
@@ -157,11 +173,45 @@ class OpticalDiffractionSimulator(QMainWindow):
         self.source_section.option3.toggled.connect(self.update_illumination_of_aperture)
 
         self.aperture_section.img_file_button.clicked.connect(self.update_illumination_of_aperture)
-        self.aperture_section.eod_mode_checkbox.stateChanged.connect(self.update_illumination_of_aperture)
+        self.aperture_section.doe_mode_checkbox.stateChanged.connect(self.update_illumination_of_aperture)
 
         self.aperture_section.img_amp.toggled.connect(self.update_illumination_of_aperture)
         self.aperture_section.img_pha.toggled.connect(self.update_illumination_of_aperture)
 
+        self.source_section.beam_waist_line_edit.editingFinished.connect(self.update_intermediate_graph)
+
+        self.aperture_section.shape_combo.currentTextChanged.connect(self.update_intermediate_graph)
+        self.aperture_section.unit_combo.currentTextChanged.connect(self.update_intermediate_graph)
+
+        # Simple aperture size line edits
+        self.aperture_section.simple_size_h_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.simple_size_w_line_edit.editingFinished.connect(self.update_intermediate_graph)
+
+        # Slit aperture line edits
+        self.aperture_section.slit_size_h_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.slit_size_w_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.slit_width_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.slit_distance_line_edit.editingFinished.connect(self.update_intermediate_graph)
+
+        # Array aperture line edits
+        self.aperture_section.matrix_h_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.matrix_w_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.matrix_spacing_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        
+        self.aperture_section.hel_bd_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        self.aperture_section.hel_sd_line_edit.editingFinished.connect(self.update_intermediate_graph)
+        
+        self.aperture_section.squ_square_size_line_edit.editingFinished.connect(self.update_intermediate_graph)
+
+        self.source_section.option1.toggled.connect(self.update_intermediate_graph)
+        self.source_section.option2.toggled.connect(self.update_intermediate_graph)
+        self.source_section.option3.toggled.connect(self.update_intermediate_graph)
+
+        self.aperture_section.img_file_button.clicked.connect(self.update_intermediate_graph)
+        self.aperture_section.doe_mode_checkbox.stateChanged.connect(self.update_intermediate_graph)
+
+        self.aperture_section.img_amp.toggled.connect(self.update_intermediate_graph)
+        self.aperture_section.img_pha.toggled.connect(self.update_intermediate_graph)
 
 
         self.window_size_combo.currentTextChanged.connect(self.update_window_size)
@@ -284,12 +334,10 @@ class OpticalDiffractionSimulator(QMainWindow):
 
         if self.source_section.source_type != "Gaussian beam":
             U0 = np.abs(aperture) + 0.5*np.abs(source)
-            self.aperture_section.illuminated_aperture = U0
             self.aperture_section.graph_widget.update_data_ap(U0)
             self.aperture_section.graph_widget.slice_view.setLevels(0,1.5)
         else:
             U0 = np.abs(aperture) + 0.7*(1-aperture)*np.abs(source)
-            self.aperture_section.illuminated_aperture = U0
             self.aperture_section.graph_widget.update_data_ap(U0)
             self.aperture_section.graph_widget.slice_view.setLevels(0,1)
 
@@ -357,11 +405,37 @@ class OpticalDiffractionSimulator(QMainWindow):
             self.source_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
             self.aperture_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
             self.simulation_section.graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
+            self.simulation_section.intermediate_graph_widget.slice_view.setColorMap(pg.ColorMap(pos=np.linspace(0,1,256), color=lut))
         else: 
             gray_lut = pg.ColorMap(pos=[0, 1], color=[[0, 0, 0], [255, 255, 255]])
             self.source_section.graph_widget.slice_view.setColorMap(gray_lut)
             self.aperture_section.graph_widget.slice_view.setColorMap(gray_lut)
             self.simulation_section.graph_widget.slice_view.setColorMap(gray_lut)
+            self.simulation_section.intermediate_graph_widget.slice_view.setColorMap(gray_lut)
+
+    def fourier_option(self, checked):
+        self.simulation_section.fourier_mode = checked
+        self.simulation_section.fourier_option(checked)
+        if checked:
+            self.update_intermediate_graph()
+
+    def update_intermediate_graph(self):
+        if self.simulation_section.fourier_mode:
+            source = self.source_section.light_source 
+            aperture = self.aperture_section.aperture
+            self.simulation_section.update_intermediate_graph(source, aperture)
+            filter = self.simulation_section.filter
+            intermediate_volume = self.simulation_section.intermediate_volume
+            filtered_volume = intermediate_volume * filter
+            U0 = np.abs(filtered_volume)**2 
+            self.simulation_section.intermediate_graph_widget.update_data_ap(U0)
+            lower, upper = np.percentile(U0,[1, 95])
+            self.simulation_section.intermediate_graph_widget.slice_view.setLevels(lower, upper)
+
+    def update_fourier_filtering_graph(self):
+        if self.simulation_section.fourier_mode:
+            self.simulation_section.update_fourier_filtering_graph()
+    
 
 if __name__ == "__main__":
 

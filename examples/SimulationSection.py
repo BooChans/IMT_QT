@@ -1,21 +1,24 @@
 import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QVBoxLayout, QWidget, QCheckBox,
-    QLabel, QComboBox, QLineEdit,QHBoxLayout, QPushButton, QProgressBar
+    QLabel, QComboBox, QLineEdit,QHBoxLayout, QPushButton, QProgressBar, QDialog
 )
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, pyqtSignal
 from PyQt5.QtGui import QIcon
 from scipy.ndimage import map_coordinates
 import sys
 
 from ressource_path import resource_path
 from DiffractionSection import RealTimeCrossSectionViewer
-from diffraction_propagation import far_field, angular_spectrum, sweep, sweep_w, fraunhofer
+from diffraction_propagation import far_field, angular_spectrum, sweep, sweep_w, fraunhofer, ft_1, ft_2
 from GenericThread import GenericThread
 from MessageWorker import MessageWorker
 
+from SimSettingsDialog import SimSettingsDialog
+
 
 class SimulationSection(QWidget):
+    intermediate_updated = pyqtSignal(object) 
     def __init__(self):
         super().__init__()
         self.unit_distance = "µm"
@@ -34,10 +37,35 @@ class SimulationSection(QWidget):
         self.wavelength = "0.633" #µm
         self.tile = "1"
 
-
-
+        self.fourier_mode = False
 
         self.graph_widget = RealTimeCrossSectionViewer(self.volume)
+
+        self.filter = np.ones((1,512,512))
+        self.intermediate_volume = np.zeros((1,512,512))
+
+
+        # 4f filtering parameters
+        self.intermediate_graph_widget = RealTimeCrossSectionViewer(self.volume)
+        self.intermediate_graph_widget.toggle_line_cb.hide()
+        self.intermediate_graph_widget.display_widget.hide()
+        self.intermediate_graph_widget.window_info_widget.hide()
+
+
+        self.filter_type = "No filter"
+        self.remove_outside = False
+
+        self.filter = np.ones((1,512,512))
+        self.filter_shape = ("512","512")
+        self.cutoff_freq = ("1.5e5", "1.5e5")
+        self.thickness = "5e4"
+        self.offset_x = "0"
+        self.offset_y = "0"
+        self.df = 1/(512*1e-6)
+        h,w = tuple(map(int, self.filter_shape))
+        self.fx = np.linspace(-h/2, h/2-1, h) * self.df
+        self.fy = np.linspace(-w/2, w/2-1, w) * self.df
+
 
         self.sim_thread = None
 
@@ -47,6 +75,13 @@ class SimulationSection(QWidget):
     def setup_ui(self):
         self.widget_layout = QVBoxLayout(self)
         self.widget_layout.addWidget(QLabel("Diffraction pattern"))
+        self.widget_layout.addWidget(self.intermediate_graph_widget)
+        
+        self.intermediate_settings_button = QPushButton("Filter settings")
+        self.intermediate_settings_button.setFixedWidth(150)
+        self.widget_layout.addWidget(self.intermediate_settings_button)
+
+
         self.widget_layout.addWidget(self.graph_widget)
 
         self.resolution_widget = QWidget()
@@ -218,6 +253,10 @@ class SimulationSection(QWidget):
         self.sweep_button_w.setIcon(QIcon(resource_path("icons/blue_arrow.png")))  # Change icon if needed
         self.sweep_button_w.setIconSize(QSize(24, 24))
 
+        self.go_filtering_button = QPushButton("Run 4f Simulation")
+        self.go_filtering_button.setIcon(QIcon(resource_path("icons/arrows.png")))
+        self.go_filtering_button.setIconSize(QSize(24, 24))
+
         # Style it
         button_style = """
             QPushButton {{
@@ -235,6 +274,7 @@ class SimulationSection(QWidget):
         self.go_button.setStyleSheet(button_style.format(color="green", hover="#eaffea"))
         self.sweep_button.setStyleSheet(button_style.format(color="red", hover="#ffeaea"))
         self.sweep_button_w.setStyleSheet(button_style.format(color="blue", hover="#b9dbfe"))
+        self.go_filtering_button.setStyleSheet(button_style.format(color="green", hover="#eaffea"))
 
         self.sweep_button.hide()
         self.sweep_button_w.hide()
@@ -242,14 +282,15 @@ class SimulationSection(QWidget):
         self.go_button.setFixedWidth(200)  # or whatever width looks good
         self.sweep_button.setFixedWidth(200)  # or whatever width looks good
         self.sweep_button_w.setFixedWidth(200)
-
+        self.go_filtering_button.setFixedWidth(200)
         # Right-align the button using a layout
         right_layout = QHBoxLayout()
         right_layout.addWidget(self.go_button)
-        right_layout.addWidget(self.sweep_button)  # pushes the button to the left
+        right_layout.addWidget(self.sweep_button)  
         right_layout.addWidget(self.sweep_button_w)
+        right_layout.addWidget(self.go_filtering_button)
         right_layout.addWidget(self.progress)
-        right_layout.addStretch()
+        right_layout.addStretch() # pushes the button to the left
         # Add this layout to your main layout
         self.widget_layout.addLayout(right_layout)
 
@@ -274,6 +315,8 @@ class SimulationSection(QWidget):
         self.dst_sim_line_edit.textChanged.connect(self.update_sim_params)
         self.wavelength_line_edit.textChanged.connect(self.update_sim_params)
         self.tile_combo.currentTextChanged.connect(self.update_sim_params)
+
+        self.intermediate_settings_button.clicked.connect(self.open_dialog)
 
 
     def start_diffraction(self, source, aperture, wavelength, z, dx, eod=False):
@@ -444,6 +487,83 @@ class SimulationSection(QWidget):
         self.simulation_distance = self.dst_sim_line_edit.text()
         self.wavelength = self.wavelength_line_edit.text()
         self.tile = self.tile_combo.currentText()
+
+
+    def open_dialog(self):
+        shape = self.filter_shape
+        filter_type = self.filter_type
+        remove_outside = self.remove_outside
+        cutoff_freq = self.cutoff_freq
+        thickness = self.thickness
+        offset_x = self.offset_x
+        offset_y = self.offset_y
+        fx = self.fx
+        fy = self.fy
+        df = self.df
+        current_values = {
+            "shape" : shape,
+            "filter_type": filter_type,
+            "remove_outside": remove_outside,
+            "cutoff_freq": cutoff_freq,
+            "thickness" : thickness,
+            "offset_x" : offset_x,
+            "offset_y" : offset_y,
+            "fx" :  fx,
+            "fy" : fy,
+            "df" : df
+        }
+
+        dialog = SimSettingsDialog(current_values)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            result = dialog.get_values()
+            print("User clicked OK")
+            self.filter_type = result["filter_type"]
+            self.remove_outside = result["remove_outside"]
+            self.cutoff_freq = result["cutoff_freq"]
+            self.thickness = result["thickness"]
+            self.filter = result["filter"]
+            self.intermediate_updated.emit(result)
+        else:
+            print("User cancelled the dialog")
+
+    def fourier_option(self, checked):
+        if checked:
+            self.intermediate_graph_widget.show()
+            self.intermediate_settings_button.show()
+            self.go_filtering_button.show()
+            self.go_button.hide()
+            self.checkbox_sweep.hide()
+            self.checkbox_sweep_w.hide()
+            self.distance_simulation_widget.hide()
+            self.update_sweep_visibility(False)
+            self.update_sweep_w_visibility(False)
+            self.resolution_widget.hide()
+        else:
+            self.intermediate_graph_widget.hide()
+            self.intermediate_settings_button.hide()
+            self.go_filtering_button.hide()
+            self.go_button.show()
+            self.checkbox_sweep.show()
+            self.checkbox_sweep_w.show()
+            self.distance_simulation_widget.show()
+            self.update_sweep_visibility(self.checkbox_sweep.isChecked())
+            self.update_sweep_w_visibility(self.checkbox_sweep_w.isChecked())
+            self.resolution_widget.show()
+
+
+    def update_intermediate_graph(self, source, aperture):
+        self.intermediate_volume = ft_1(source*aperture)
+        
+    def update_fourier_filtering_graph(self):
+        intermediate_volume = self.intermediate_volume
+        filter = self.filter
+        U0 = intermediate_volume * filter
+        self.volume = ft_2(U0)
+        self.graph_widget.update_data(self.volume)
+
+        
+        
 
 
 

@@ -291,10 +291,6 @@ class ImageSection(QWidget):
         else: 
             self.shape_dimensions_widget.show()
 
-    def update_pixel_size(self):
-        self.sampling = self.sampling_line_edit.text()
-        self.graph_widget.sampling = float(self.sampling)
-        self.graph_widget.update_data(self.graph_widget.volume)
 
     def insert_with_offset(self,image, target_shape, offset):
         """

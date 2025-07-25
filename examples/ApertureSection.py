@@ -20,7 +20,7 @@ class ApertureSection(QWidget):
         self.array_shape = ("512", "512")
         self.aperture_size = ("150","150") 
 
-        self.eod_mode = False
+        self.doe_mode = False
 
 
         #slit shape details
@@ -321,11 +321,11 @@ class ApertureSection(QWidget):
 
         self.img_amp.setChecked(True)
 
-        self.eod_mode_checkbox = QCheckBox("EOD")
-        self.eod_mode_checkbox.setChecked(self.eod_mode)
-        self.page_layout.addWidget(self.eod_mode_checkbox)
-
+        self.doe_mode_checkbox = QCheckBox("DOE")
+        self.doe_mode_checkbox.setChecked(self.doe_mode)
         self.page_layout.addWidget(self.use_img_as_widget)
+        self.page_layout.addWidget(self.doe_mode_checkbox)
+
 
     def setup_connections(self):
         self.img_file_button.clicked.connect(self.browse_file)
@@ -344,7 +344,7 @@ class ApertureSection(QWidget):
         self.slit_width_line_edit.textChanged.connect(self.update_aperture_graph)
         self.slit_distance_line_edit.textChanged.connect(self.update_aperture_graph)
 
-        self.eod_mode_checkbox.stateChanged.connect(self.update_aperture_graph)
+        self.doe_mode_checkbox.stateChanged.connect(self.update_aperture_graph)
         # Array aperture
         self.matrix_h_line_edit.textChanged.connect(self.update_aperture_graph)
         self.matrix_w_line_edit.textChanged.connect(self.update_aperture_graph)
@@ -371,7 +371,7 @@ class ApertureSection(QWidget):
         self.squ_array_widget.hide()
         self.img_import_widget.hide()
         self.use_img_as_widget.hide()
-        self.eod_mode_checkbox.hide()
+        self.doe_mode_checkbox.hide()
 
         # Show only the relevant widgets
         if text == "Elliptic" or text == "Rectangular":  # Fixed condition
@@ -388,7 +388,7 @@ class ApertureSection(QWidget):
         elif text == "Image":
             self.img_import_widget.show()
             self.use_img_as_widget.show()
-            self.eod_mode_checkbox.show()
+            self.doe_mode_checkbox.show()
         self.update_aperture_graph()
 
     def get_inputs(self):
@@ -468,7 +468,7 @@ class ApertureSection(QWidget):
             self.aperture_shape = self.shape_combo.currentText()
             self.distance_unit = self.unit_combo.currentText()
             self.graph_widget.sampling = float(self.sampling)
-            self.eod_mode = True if self.eod_mode_checkbox.isChecked() else False
+            self.doe_mode = True if self.doe_mode_checkbox.isChecked() else False
 
             if self.aperture_shape in ["Elliptic", "Rectangular"]:
                 self.aperture_size = (self.simple_size_h_line_edit.text(), self.simple_size_w_line_edit.text())
@@ -534,15 +534,14 @@ class ApertureSection(QWidget):
 
         elif ext == ".tiff":
             img = tifffile.imread(self.img_path)
-            if not self.eod_mode:
+            if not self.doe_mode:
                 img = img.T
 
         else:
             img = Image.open(self.img_path).convert("L")
-            img.thumbnail(array_shape, Image.LANCZOS)
             img = np.array(img)
 
-            if ext == ".png" and self.eod_mode:
+            if ext == ".png" and self.doe_mode:
                 img = 2 * np.pi / 255 * img
                 # no transpose here!
             else:

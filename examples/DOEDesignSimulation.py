@@ -186,8 +186,8 @@ class DOEDesignSimulation(QMainWindow):
                     doe = self.phases[-1]
                     doe = np.mod(doe, 2*np.pi)
                     doe = np.round(255/(2*np.pi)*doe) 
-                    doe = doe.astype(np.uint8)   
-                    doe = Image.fromarray(doe, mode = 'L')
+                    doe = doe.astype(np.uint8) 
+                    doe = Image.fromarray(doe)
                     doe.save(file_path)
             else:
                 if not file_path.endswith(".npy") and not file_path.endswith(".tiff") and not file_path.endswith(".png"):
@@ -204,7 +204,7 @@ class DOEDesignSimulation(QMainWindow):
                             doe = self.phases[-1]
                             doe = np.mod(doe, 2*np.pi)
                             doe = np.round(255/(2*np.pi)*doe) 
-                            doe = Image.fromarray(doe, mode = 'L')
+                            doe = Image.fromarray(doe)
                             doe.save(file_path)
             print(f"Saving to {file_path}, data shape: {self.phases[-1].shape if (self.phases is not None and len(self.phases) > 0) else 'None'}")
 
